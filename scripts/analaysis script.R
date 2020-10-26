@@ -1,5 +1,5 @@
 ## Script for analysing  pnion allometry data
-## Andrew Cunliffe & Cameron McIntire
+## Andrew Cunliffe <andrewmcunliffe@gmail.com> & Cameron McIntire
 ## Started 2020-10-26
 
 # Establish operating environment ----
@@ -9,40 +9,30 @@ path <- getwd()
 # Load required packages ----
 #   # Download
 if(!require(tidyverse)) {install.packages("tidyverse"); require(tidyverse)}
-# if(!require(viridis)) {install.packages("viridis"); require(viridis)}
-# if(!require(propagate)) {install.packages("propagate"); require(propagate)}
+if(!require(viridis)) {install.packages("viridis"); require(viridis)}
+if(!require(patchwork)) {install.packages("patchwork"); require(patchwork)}
+if(!require(propagate)) {install.packages("propagate"); require(propagate)}
 # if(!require(nlstools)) {install.packages("nlstools"); require(nlstools)}
 # if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
 # if(!require(polynom)) {install.packages("polynom"); require(polynom)}
-# if(!require(gridExtra)) {install.packages("gridExtra"); require(gridExtra)}
 # if(!require(gvlma)) {install.packages("gvlma"); require(gvlma)}
-# if(!require(grid)) {install.packages("grid"); require(grid)}
 # if(!require(ggpubr)) {install.packages("ggpubr"); require(ggpubr)}
 
 
 # Install
 library(tidyverse) # For dplyr and ggplot2
-# library(viridis) # load friendly colour palette for plotting.
-# library(grid) # required for plot annotation 
-# library(gridExtra) # for arranging multi-panel plots
+library(viridis) # load friendly colour palette for plotting.
+library(patchwork) # this is Andy's favorite for multi-panel plots
+library(propagate) # required for predicting confidence intervals on ESD : Biomass plot
 # library(ggpmisc) # for adding model parameters to plots
 # library(gvlma) # Global Validation of Linear Models Assumptions
 # library(polynom)
 # library(nlstools)
-# library(propagate) # required for predicting confidence intervals on ESD : Biomass plot 
 # library(ggpubr) 
 
 
 # Load data ----
 pinion_data <- read.csv("data/pinion_data.csv", header = T)[-1,]  # Read in summary  data
-
-str(pinion_data)
-
-pinion_data2 <- read_csv("data/pinion_data.csv", header = T)[-1,]  # Read in summary  data
-
-str(pinion_data2)
-
-# specify data type!
 
 
 # Create plotting theme and colour scheme----
@@ -59,7 +49,7 @@ theme_coding <- function(){
           legend.key.size = unit(1,"line"),
           legend.position = c(0.9, 0.9))
 }
- 
+
 # Colour scheme
 Colour.wet <- "#440154FF"
 Colour.dry <- "#39568CFF"
@@ -67,22 +57,57 @@ Colour.image <- "#20A387FF"
 Colours <- c(Colour.wet, Colour.dry, Colour.image)
 
 
-## Prepare dataset ----
-# calulate canopy area from a and b diameters
-pinion_data$canope_area_from_daim <- (pinion_data$CanDia1)/2 + (pinion_data$CanDia2)/2
+
+## Prepare data ----
+# Specify numeric types
+pinion_data$longitude = as.numeric(pinion_data$longitude)
+pinion_data$latitude = as.numeric(pinion_data$latitude)
+pinion_data$canopy_area = as.numeric(pinion_data$canopy_area)
+pinion_data$canopy_area = as.numeric(pinion_data$canopy_area)
+pinion_data$CanDia1 = as.numeric(pinion_data$CanDia1)
+pinion_data$CanDia2 = as.numeric(pinion_data$CanDia2)
+pinion_data$dieback_pc = as.numeric(pinion_data$dieback_pc)
+pinion_data$max_height = as.numeric(pinion_data$max_height)
+pinion_data$base_live_canopy = as.numeric(pinion_data$base_live_canopy)
+pinion_data$diameter_at_base = as.numeric(pinion_data$diameter_at_base)
+pinion_data$diameter_at_30_cm = as.numeric(pinion_data$diameter_at_30_cm)
+pinion_data$cookie_diameter = as.numeric(pinion_data$cookie_diameter)
+pinion_data$wet_mass_small_partititon = as.numeric(pinion_data$wet_mass_small_partititon)
+pinion_data$wet_mass_large_partititon = as.numeric(pinion_data$wet_mass_large_partititon)
+pinion_data$wet_mass_total = as.numeric(pinion_data$wet_mass_total)
+pinion_data$moisture_content_of_small_partition = as.numeric(pinion_data$moisture_content_of_small_partition)
+pinion_data$moisture_content_of_large_partition = as.numeric(pinion_data$moisture_content_of_large_partition)
+pinion_data$moisture_content_of_total = as.numeric(pinion_data$moisture_content_of_total)
+pinion_data$dry_mass_small_partititon = as.numeric(pinion_data$dry_mass_small_partititon)
+pinion_data$dry_mass_large_partititon = as.numeric(pinion_data$dry_mass_large_partititon)
+pinion_data$dry_mass_total = as.numeric(pinion_data$dry_mass_total)
+pinion_data$proportion_subsampled_and_dried_small_partition = as.numeric(pinion_data$proportion_subsampled_and_dried_small_partition)
+pinion_data$proportion_subsampled_and_dried_large_partition = as.numeric(pinion_data$proportion_subsampled_and_dried_large_partition)
+pinion_data$proportion_subsampled_and_dried_total = as.numeric(pinion_data$proportion_subsampled_and_dried_total)
+
+# calculate canopy area from a and b diameters
+pinion_data$canope_area_from_daim <- pi * (pinion_data$CanDia1)/2 * (pinion_data$CanDia2)/2
 
 
-# # create function to remove rows containing NA in specific column(s) 
-# NAfilter <- function(data, desiredCols) {
-#   completeVec <- complete.cases(data[, desiredCols])
-#   return(data[completeVec, ])
-# }
-# 
-# # Create new dataframe for analysis without NA in specific columns 
-# juniper_data.wo.NA <- NAfilter(juniper_data, c("dry_mass_total", "BA_from_wet_diameter"))
-# diameter_data_wo_NA <- NAfilter(all_stems, c("RCD_wet_cm", "RCD_dry_cm"))
-# 
-# # Reformatting dataframes for plotting
+
+
+
+
+
+
+
+
+
+
+###################################################
+#### Old script from Juniper to recycle/remove ####
+###################################################
+
+
+
+
+
+# # Reformatting data for plotting
 # # Reformat canopy area versus biomass object for plotting.
 # temp1 <- rep(juniper_data$dry_mass_total, 2)
 # temp2 <- c(juniper_data$CA1,
@@ -94,7 +119,8 @@ pinion_data$canope_area_from_daim <- (pinion_data$CanDia1)/2 + (pinion_data$CanD
 # remove(temp1, temp2, temp3, temp4)
 # CA.biomass$Source <- as.factor(CA.biomass$Source)
 # CA.biomass$Group <- as.factor(CA.biomass$Group)
-# 
+
+
 # # Reformat basal area versus biomass object for plotting.
 # temp1 <- rep(juniper_data$dry_mass_total, 3)
 # temp2 <- c(juniper_data$BA_from_wet_diameter,
@@ -107,19 +133,9 @@ pinion_data$canope_area_from_daim <- (pinion_data$CanDia1)/2 + (pinion_data$CanD
 # remove(temp1, temp2, temp3, temp4)
 # BA.biomass$Source <- as.factor(BA.biomass$Source)
 # BA.biomass$Group <- as.factor(BA.biomass$Group)
-# 
-# # ESD and biomass datasets
-# temp1 <- rep(juniper_data$dry_mass_total, 2)
-# temp2 <- c(juniper_data$ESD_wet, 
-#            juniper_data$ESD_dry)
-# temp3 <- rep(c("ESDwet", "ESDdry"), each = 20)
-# temp4 <- rep(1:2, each = 20)
-# ESD.biomass <- data.frame(temp1, temp2, temp3, temp4)
-# colnames(ESD.biomass) <- c("Biomass", "ESD", "Source", "Group")
-# remove(temp1, temp2, temp3, temp4)
-# ESD.biomass$Source <- as.factor(ESD.biomass$Source)
-# ESD.biomass$Group <- as.factor(ESD.biomass$Group)
-# 
+
+
+
 # # Stem diameter and sapwood area (SWA) datasets
 # temp1 <- rep(all_stems$Scale_corrected_SWA_cm2, 2)
 # temp2 <- c(all_stems$RCD_wet_cm)
@@ -127,13 +143,7 @@ pinion_data$canope_area_from_daim <- (pinion_data$CanDia1)/2 + (pinion_data$CanD
 # remove(temp1, temp2)
 # colnames(all_stems.SWA.long) <- c("Scale_corrected_SWA_cm2", "RCD_cm")
 # 
-# # ESD and sapwood area (SWA) datasets
-# temp1 <- rep(juniper_data$Scale_corrected_SWA_cm2, 2)
-# temp2 <- c(juniper_data$ESD_wet)
-# ESD.SWA.Long <- data.frame(temp1, temp2)
-# remove(temp1, temp2)
-# colnames(ESD.SWA.Long) <- c("Scale_corrected_SWA_cm2", "ESD_wet")
-# 
+
 # 
 # 
 # # Statistical modelling ----
@@ -201,13 +211,7 @@ pinion_data$canope_area_from_daim <- (pinion_data$CanDia1)/2 + (pinion_data$CanD
 #                                na.action=na.exclude)
 # summary(powermodel.SWA.diameter)
 # 
-# # ESD as predictor of total sapwood area
-# # Statistical models
-# model.ESD.SWA <- nls(Scale_corrected_SWA_cm2 ~ a*ESD_wet^b,
-#                      data = juniper_data,
-#                      start = list(a= 1, b= 1),
-#                      na.action=na.exclude)
-# summary(model.ESD.SWA)
+
 # 
 # # SWA residuals
 # # examining residuals (ABS)      
@@ -934,21 +938,6 @@ pinion_data$canope_area_from_daim <- (pinion_data$CanDia1)/2 + (pinion_data$CanD
 # dev.off()
 # 
 # 
-# # Analysis of Miller data (from Miller at al. 1981) ----
-# Model_MillerMass_MillerCA <- lm(Dry_mass_Kg ~ Canopy_Area_CA2, data = miller_data)
-# summary(Model_MillerMass_MillerCA)
-# 
-# Model_MillerMass_MillerCA2 <- lm(Dry_mass_Kg ~ 0 + Canopy_Area_CA2, data = miller_data)
-# summary(Model_MillerMass_MillerCA2)
-# 
-# # create new dataset combingin our CA va. biomass observations with those from Miller at al.
-# Miller_CA_mass <- data.frame(miller_data$Dry_mass_Kg,
-#                              miller_data$Canopy_Area_CA2,
-#                              rep("Miller et al. 1981", each = 33), 
-#                              rep(3, each = 33))
-# colnames(Miller_CA_mass) <- c("Biomass", "CA", "Source", "Group")
-# Miller_CA_mass$Source <- as.factor(Miller_CA_mass$Source)
-# Miller_CA_mass$Group <- as.factor(Miller_CA_mass$Group)
 # 
 # 
 # CA.biomass2 <- rbind(CA.biomass, Miller_CA_mass)
