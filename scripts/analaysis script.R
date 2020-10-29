@@ -4,8 +4,8 @@
 
 # Establish operating environment ----
 rm(list=ls())
-setwd("C:\Users\cmcintire\Desktop")
-path <- getwd()
+#setwd("C:\Users\cmcintire\Desktop")
+#path <- getwd()
 
 # Load required packages ----
 #   # Download
@@ -33,7 +33,7 @@ library(ggpubr)
 
 
 # Load data ----
-pinon_data <- read.csv("pinon_data.csv", header = T)[-1,]  # Read in summary  data
+pinon_data <- read.csv("data/pinon_data.csv", header = T)[-1,]  # Read in summary  data
 
 
 # Create plotting theme and colour scheme----
