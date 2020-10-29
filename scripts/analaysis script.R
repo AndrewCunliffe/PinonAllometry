@@ -4,6 +4,7 @@
 
 # Establish operating environment ----
 rm(list=ls())
+setwd("C:\Users\cmcintire\Desktop")
 path <- getwd()
 
 # Load required packages ----
@@ -12,11 +13,11 @@ if(!require(tidyverse)) {install.packages("tidyverse"); require(tidyverse)}
 if(!require(viridis)) {install.packages("viridis"); require(viridis)}
 if(!require(patchwork)) {install.packages("patchwork"); require(patchwork)}
 if(!require(propagate)) {install.packages("propagate"); require(propagate)}
-# if(!require(nlstools)) {install.packages("nlstools"); require(nlstools)}
-# if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
-# if(!require(polynom)) {install.packages("polynom"); require(polynom)}
-# if(!require(gvlma)) {install.packages("gvlma"); require(gvlma)}
-# if(!require(ggpubr)) {install.packages("ggpubr"); require(ggpubr)}
+if(!require(nlstools)) {install.packages("nlstools"); require(nlstools)}
+if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
+if(!require(polynom)) {install.packages("polynom"); require(polynom)}
+if(!require(gvlma)) {install.packages("gvlma"); require(gvlma)}
+if(!require(ggpubr)) {install.packages("ggpubr"); require(ggpubr)}
 
 
 # Install
@@ -24,15 +25,15 @@ library(tidyverse) # For dplyr and ggplot2
 library(viridis) # load friendly colour palette for plotting.
 library(patchwork) # this is Andy's favorite for multi-panel plots
 library(propagate) # required for predicting confidence intervals on ESD : Biomass plot
-# library(ggpmisc) # for adding model parameters to plots
-# library(gvlma) # Global Validation of Linear Models Assumptions
-# library(polynom)
-# library(nlstools)
-# library(ggpubr) 
+library(ggpmisc) # for adding model parameters to plots
+library(gvlma) # Global Validation of Linear Models Assumptions
+library(polynom)
+library(nlstools)
+library(ggpubr) 
 
 
 # Load data ----
-pinion_data <- read.csv("data/pinion_data.csv", header = T)[-1,]  # Read in summary  data
+pinon_data <- read.csv("pinon_data.csv", header = T)[-1,]  # Read in summary  data
 
 
 # Create plotting theme and colour scheme----
@@ -60,36 +61,64 @@ Colours <- c(Colour.wet, Colour.dry, Colour.image)
 
 ## Prepare data ----
 # Specify numeric types
-pinion_data$longitude = as.numeric(pinion_data$longitude)
-pinion_data$latitude = as.numeric(pinion_data$latitude)
-pinion_data$canopy_area = as.numeric(pinion_data$canopy_area)
-pinion_data$canopy_area = as.numeric(pinion_data$canopy_area)
-pinion_data$CanDia1 = as.numeric(pinion_data$CanDia1)
-pinion_data$CanDia2 = as.numeric(pinion_data$CanDia2)
-pinion_data$dieback_pc = as.numeric(pinion_data$dieback_pc)
-pinion_data$max_height = as.numeric(pinion_data$max_height)
-pinion_data$base_live_canopy = as.numeric(pinion_data$base_live_canopy)
-pinion_data$diameter_at_base = as.numeric(pinion_data$diameter_at_base)
-pinion_data$diameter_at_30_cm = as.numeric(pinion_data$diameter_at_30_cm)
-pinion_data$cookie_diameter = as.numeric(pinion_data$cookie_diameter)
-pinion_data$wet_mass_small_partititon = as.numeric(pinion_data$wet_mass_small_partititon)
-pinion_data$wet_mass_large_partititon = as.numeric(pinion_data$wet_mass_large_partititon)
-pinion_data$wet_mass_total = as.numeric(pinion_data$wet_mass_total)
-pinion_data$moisture_content_of_small_partition = as.numeric(pinion_data$moisture_content_of_small_partition)
-pinion_data$moisture_content_of_large_partition = as.numeric(pinion_data$moisture_content_of_large_partition)
-pinion_data$moisture_content_of_total = as.numeric(pinion_data$moisture_content_of_total)
-pinion_data$dry_mass_small_partititon = as.numeric(pinion_data$dry_mass_small_partititon)
-pinion_data$dry_mass_large_partititon = as.numeric(pinion_data$dry_mass_large_partititon)
-pinion_data$dry_mass_total = as.numeric(pinion_data$dry_mass_total)
-pinion_data$proportion_subsampled_and_dried_small_partition = as.numeric(pinion_data$proportion_subsampled_and_dried_small_partition)
-pinion_data$proportion_subsampled_and_dried_large_partition = as.numeric(pinion_data$proportion_subsampled_and_dried_large_partition)
-pinion_data$proportion_subsampled_and_dried_total = as.numeric(pinion_data$proportion_subsampled_and_dried_total)
+pinon_data$longitude = as.numeric(pinon_data$longitude)
+pinon_data$latitude = as.numeric(pinon_data$latitude)
+pinon_data$canopy_area = as.numeric(pinon_data$canopy_area)
+pinon_data$canopy_area = as.numeric(pinon_data$canopy_area)
+pinon_data$CanDia1 = as.numeric(pinon_data$CanDia1)
+pinon_data$CanDia2 = as.numeric(pinon_data$CanDia2)
+pinon_data$dieback_pc = as.numeric(pinon_data$dieback_pc)
+pinon_data$max_height = as.numeric(pinon_data$max_height)
+pinon_data$base_live_canopy = as.numeric(pinon_data$base_live_canopy)
+pinon_data$crown_depth = as.numeric(pinon_data$crown_depth)
+pinon_data$live_crown_ratio = as.numeric(pinon_data$live_crown_ratio)
+pinon_data$diameter_at_base_wet = as.numeric(pinon_data$diameter_at_base)
+pinon_data$diameter_at_30_cm = as.numeric(pinon_data$diameter_at_30_cm)
+pinon_data$disk_diameter_wet = as.numeric(pinon_data$disk_diameter_wet)
+pinon_data$disk_diameter_dry = as.numeric(pinon_data$disk_diameter_dry)
+pinon_data$base_ba_wet = as.numeric(pinon_data$base_ba_wet)
+pinon_data$disk_ba_wet = as.numeric(pinon_data$disk_ba_wet)
+pinon_data$disk_diameter_dry = as.numeric(pinon_data$disk_diameter_dry)
+pinon_data$inside_bark_area = as.numeric(pinon_data$inside_bark_area)
+pinon_data$inside_bark_diam = as.numeric(pinon_data$inside_bark_diam)
+pinon_data$heartwood_area = as.numeric(pinon_data$heartwood_area)
+pinon_data$sapwood_area = as.numeric(pinon_data$sapwood_area)
+pinon_data$bark_thickness = as.numeric(pinon_data$bark_thickness)
+pinon_data$wet_mass_small_partititon = as.numeric(pinon_data$wet_mass_small_partititon)
+pinon_data$wet_mass_large_partititon = as.numeric(pinon_data$wet_mass_large_partititon)
+pinon_data$wet_mass_total = as.numeric(pinon_data$wet_mass_total)
+pinon_data$moisture_content_of_small_partition = as.numeric(pinon_data$moisture_content_of_small_partition)
+pinon_data$moisture_content_of_large_partition = as.numeric(pinon_data$moisture_content_of_large_partition)
+pinon_data$moisture_content_of_total = as.numeric(pinon_data$moisture_content_of_total)
+pinon_data$dry_mass_small_partititon = as.numeric(pinon_data$dry_mass_small_partititon)
+pinon_data$dry_mass_large_partititon = as.numeric(pinon_data$dry_mass_large_partititon)
+pinon_data$dry_mass_total_g = as.numeric(pinon_data$dry_mass_total_g)
+pinon_data$dry_mass_total_kg = as.numeric(pinon_data$dry_mass_total_kg)
+pinon_data$proportion_subsampled_and_dried_small_partition = as.numeric(pinon_data$proportion_subsampled_and_dried_small_partition)
+pinon_data$proportion_subsampled_and_dried_large_partition = as.numeric(pinon_data$proportion_subsampled_and_dried_large_partition)
+pinon_data$proportion_subsampled_and_dried_total = as.numeric(pinon_data$proportion_subsampled_and_dried_total)
 
 # calculate canopy area from a and b diameters
-pinion_data$canope_area_from_daim <- pi * (pinion_data$CanDia1)/2 * (pinion_data$CanDia2)/2
+pinon_data$canope_area_from_daim <- pi * (pinon_data$CanDia1)/2 * (pinon_data$CanDia2)/2
 
 
 
+#Linear models
+
+Model_CA1_CA2 <- lm(CanDia2 ~ CanDia1, data = pinon_data)
+summary(Model_CA1_CA2)
+
+Model_BAwet <- lm(dry_mass_total_kg ~ base_ba_wet, data = pinon_data)
+summary(Model_BAwet)
+
+Model_BAdry <- lm(dry_mass_total ~ BA_from_dry_diameter, data = pinon_data)
+summary(Model_BAdry)
+
+Model_Zmax <- lm(dry_mass_total ~ max_height, data = pinon_data) 
+summary(Model_Zmax)
+
+Model_SA <- lm(dry_mass_total ~ sapwood_area, data = pinon_data)
+summary(Model_SA)
 
 
 
