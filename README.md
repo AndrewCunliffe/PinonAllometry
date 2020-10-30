@@ -1,3 +1,4 @@
-# PinionAllometry
-Code for analysing data for Pinion allometry manuscript
-conact: cameron.mcintire@usda.gov
+# PinonAllometry
+Code for analysing data for Pinon allometry manuscript
+
+conact: cameron.mcintire@usda.gov & andrewmcunliffe@gmail.com
