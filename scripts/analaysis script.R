@@ -18,7 +18,6 @@ if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
 if(!require(polynom)) {install.packages("polynom"); require(polynom)}
 if(!require(gvlma)) {install.packages("gvlma"); require(gvlma)}
 if(!require(ggpubr)) {install.packages("ggpubr"); require(ggpubr)}
-if(!require(ggplot2)) {install.packages("ggplot2"); require(ggplot2)}
 if(!require(propagate)) {install.packages("propagate"); require(propagate)}
 if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
 
