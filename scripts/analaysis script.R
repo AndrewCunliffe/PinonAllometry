@@ -440,7 +440,7 @@ preds.SWA$sapwood_area <- prop.SWA$summary[,1]  # Mean prediction
 preds.SWA$Lower.CI <- prop.SWA$summary[,5] # Lower bounds of the CI (2.5%)
 preds.SWA$Upper.CI <- prop.SWA$summary[,6] # Upper bounds of the CI (97.5%) 
 
-#Figure: Total biomass as a function of RCD
+#Figure: Total sapwood area as a function of wet disk diameter
 ggplot(data = pinon_data, aes(x = disk_diameter_wet, y = sapwood_area)) +
    geom_point(na.rm = TRUE, alpha=0.7) +
    geom_ribbon(data = preds.SWA, aes(x = disk_diameter_wet, y = sapwood_area,
@@ -453,8 +453,8 @@ ggplot(data = pinon_data, aes(x = disk_diameter_wet, y = sapwood_area)) +
          panel.grid = element_blank(),
          plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
          panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
-    labs(x = expression(Sapwood~area~(cm^2)), 
-         y = expression(Dry~biomass~(Kg)))
+    labs(y = expression(Sapwood~area~(cm^2)), 
+         x = expression(Disk~diameter~(cm)))
 
 
 # examining residuals (ABS)      
