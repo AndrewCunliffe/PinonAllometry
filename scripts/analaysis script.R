@@ -18,6 +18,10 @@ if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
 if(!require(polynom)) {install.packages("polynom"); require(polynom)}
 if(!require(gvlma)) {install.packages("gvlma"); require(gvlma)}
 if(!require(ggpubr)) {install.packages("ggpubr"); require(ggpubr)}
+if(!require(ggplot2)) {install.packages("ggplot2"); require(ggplot2)}
+if(!require(propagate)) {install.packages("propagate"); require(propagate)}
+if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
+
 
 
 # Install
@@ -38,10 +42,10 @@ pinon_data <- read.csv("data/pinon_data.csv", header = T)[-1,]  # Read in summar
 
 # Create plotting theme and colour scheme----
 theme_coding <- function(){
-  theme_bw()+
-    theme(axis.text = element_text(size = 6),
+  theme_classic()+
+    theme(axis.text = element_text(size = 10),
           axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
-          axis.title = element_text(size = 8),
+          axis.title = element_text(size = 10),
           panel.grid = element_blank(),
           plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
           plot.title = element_text(size = 10, vjust = 1, hjust = 0.5),
@@ -56,8 +60,6 @@ Colour.wet <- "#440154FF"
 Colour.dry <- "#39568CFF"
 Colour.image <- "#20A387FF"
 Colours <- c(Colour.wet, Colour.dry, Colour.image)
-
-
 
 ## Prepare data ----
 # Specify numeric types
@@ -97,44 +99,413 @@ pinon_data$dry_mass_total_kg = as.numeric(pinon_data$dry_mass_total_kg)
 pinon_data$proportion_subsampled_and_dried_small_partition = as.numeric(pinon_data$proportion_subsampled_and_dried_small_partition)
 pinon_data$proportion_subsampled_and_dried_large_partition = as.numeric(pinon_data$proportion_subsampled_and_dried_large_partition)
 pinon_data$proportion_subsampled_and_dried_total = as.numeric(pinon_data$proportion_subsampled_and_dried_total)
+pinon_data$drone_canopy_height_min = as.numeric(pinon_data$drone_canopy_height_min)
+pinon_data$drone_canopy_height_max = as.numeric(pinon_data$drone_canopy_height_max)
+pinon_data$HAG_plotmean_of_cellmax_m = as.numeric(pinon_data$HAG_plotmean_of_cellmax_m)
+pinon_data$HAG_plotmedian_of_cellmax_m = as.numeric(pinon_data$HAG_plotmedian_of_cellmax_m)
+pinon_data$HAG_plot90percentile_of_cellmax_m = as.numeric(pinon_data$HAG_plot90percentile_of_cellmax_m)
 
-# calculate canopy area from a and b diameters
-pinon_data$canope_area_from_daim <- pi * (pinon_data$CanDia1)/2 * (pinon_data$CanDia2)/2
+
+# Calculate canopy area from a and b diameters
+pinon_data$canopy_area_from_daim <- pi * (pinon_data$CanDia1)/2 * (pinon_data$CanDia2)/2
 
 
 
-#Linear models
+# Linear models
 
-Model_CA1_CA2 <- lm(CanDia2 ~ CanDia1, data = pinon_data)
+# Model for comparing canopy area from polygons (CA1) and field obs (CA2)
+Model_CA1_CA2 <- lm(canopy_area_from_daim ~ canopy_area, data = pinon_data)
 summary(Model_CA1_CA2)
+#Coefficients:
+#             Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.01343    0.16860   -0.08    0.937    
+# canopy_area  1.07822    0.02318   46.51   <2e-16 ***
+   
+# Plot drone derived canopy area as a function of field estimated canopy area
+ ggplot(data = pinon_data, aes( x = canopy_area, y = canopy_area_from_daim )) +
+    geom_point(size = 2) +
+    geom_smooth(method = "lm", formula = "y~x", color = "black") +
+    geom_abline(intercept = 0, slope = 1, color="black", 
+                linetype="dashed", size= 0.5) +
+    theme_classic() +
+    theme(axis.text = element_text(size = 10, color = "black"),
+          axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+          axis.title = element_text(size = 10),
+          panel.grid = element_blank(),
+          plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+          panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
+    scale_y_continuous(limits=c(-0.5,21), breaks=seq(0,22,5), expand = c(0,0)) +
+    scale_x_continuous(limits=c(-0.5,21), breaks=seq(0,22,5), expand = c(0,0)) +
+    labs(x = expression(CA["1"]~(m^2)),
+         y = expression(CA["2"]~(m^2))) +
+    stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
+                 formula = "y~x", 
+                 parse = TRUE) #insert R2 and equation into the plot
+ 
+ #save the figure to WD
+ ggsave("CA1_CA2_regression.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
+#------
+# Model for total tree biomass as a function of the field measured BA
 Model_BAwet <- lm(dry_mass_total_kg ~ base_ba_wet, data = pinon_data)
 summary(Model_BAwet)
+#Coefficients:
+#            Estimate Std. Error t value Pr(>|t|)    
+#(Intercept) -7.40437    6.59978  -1.122    0.277    
+#base_ba_wet  0.33130    0.03106  10.666 3.28e-09 ***
 
-Model_BAdry <- lm(dry_mass_total ~ BA_from_dry_diameter, data = pinon_data)
-summary(Model_BAdry)
+#------
+# Model for total tree biomass as a function of the fresh disk measured BA
+Model_disk_BAwet <- lm(dry_mass_total_kg ~ disk_diameter_wet, data = pinon_data)
+summary(Model_disk_BAwet)
+#Coefficients:
+#                  Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)       -30.6859    11.1847  -2.744   0.0134 *  
+#disk_diameter_wet   6.4158     0.8209   7.815 3.41e-07 ***
 
-Model_Zmax <- lm(dry_mass_total ~ max_height, data = pinon_data) 
-summary(Model_Zmax)
+#------
+# Model for total tree biomass as a function of the dry disk measured BA
+Model_disk_BAdry <- lm(dry_mass_total_kg ~ disk_diameter_dry, data = pinon_data)
+summary(Model_disk_BAdry)
+#Coefficients:
+#                  Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)       -29.6225    11.2213  -2.640   0.0166 *  
+#disk_diameter_dry   6.7203     0.8725   7.702 4.19e-07 ***
 
-Model_SA <- lm(dry_mass_total ~ sapwood_area, data = pinon_data)
-summary(Model_SA)
+#------
+# Model for comparing field measured height to drone derived max height
+Model_height <- lm(drone_canopy_height_max ~ max_height, data = pinon_data) 
+summary(Model_height)
+#Coefficients:
+#            Estimate Std. Error t value Pr(>|t|)    
+#(Intercept) -0.11238    0.17395  -0.646    0.526    
+#max_height   0.98708    0.04484  22.013 1.83e-14 ***
+
+# Testing difference between field measured height and drone measured height
+height_difference <- pinon_data$drone_canopy_height_max - pinon_data$max_height
+# Assessing data distribution
+length(height_difference)
+qqnorm(height_difference)
+qqline(height_difference)       
+shapiro.test(height_difference)
+# W = 0.83306, p-value = 0.00281
+# these data are signifcantly non-normal, so a non-parametric test is needed.
+# Wilcoxon signed-rank test
+wilcox.test(pinon_data$drone_canopy_height_max, pinon_data$max_height,
+            paired = TRUE, alternative = "less",
+            conf.int = TRUE)
+# Result: height derived from drone and field measured are not sig different
+
+# Plot drone derive height as a function of measured height
+ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
+   geom_point(size = 2) +
+   geom_smooth(method = "lm", formula = "y~x", color = "black") +
+   geom_abline(intercept = 0, slope = 1, color="black", 
+               linetype="dashed", size= 0.5) +
+   theme_classic() +
+   theme(axis.text = element_text(size = 10, color = "black"),
+         axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+         axis.title = element_text(size = 10),
+         panel.grid = element_blank(),
+         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+         panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
+   scale_y_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
+   scale_x_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
+   xlab("Measued height (m)") +
+   ylab("UAV estimated height (m)") +
+   stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
+                formula = "y~x", 
+                parse = TRUE) #insert R2 and equation into the plot
+
+#save the figure to WD
+ggsave("maxheight_droneheight.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 
+#------
+# Model for comparing bark-thickness to RCD
+Model_barkthickness <- lm(bark_thickness ~ disk_diameter_wet, data = pinon_data)
+summary(Model_barkthickness)
+#Coefficients:
+#                  Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)       0.129403   0.063568   2.036   0.0568 .  
+#disk_diameter_wet 0.055105   0.004666  11.811 6.52e-10 ***
+
+# Plot drone derive height as a function of measured height
+ggplot(data = pinon_data, aes( x = disk_diameter_wet, y = bark_thickness )) +
+   geom_point(size = 2) +
+   geom_smooth(method = "lm", formula = "y~x", color = "black") +
+   theme_classic() +
+   theme(axis.text = element_text(size = 10, color = "black"),
+         axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+         axis.title = element_text(size = 10),
+         panel.grid = element_blank(),
+         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+         panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
+   scale_y_continuous(limits=c(0,2.2), breaks=seq(0,3,0.5), expand = c(0.01,0)) +
+   scale_x_continuous(limits=c(0,24), breaks=seq(0,24,4), expand = c(0.01,0)) +
+   xlab("Disk diameter (cm)") +
+   ylab("Bark thickness (cm)") +
+   stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
+                formula = "y~x", 
+                parse = TRUE) #insert R2 and equation into the plot
+
+#save the figure to WD
+ggsave("barkthickness.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+
+#------
+# Model for comparing wet and dry disk diameters
+Model_disk_wetdry <- lm(disk_diameter_dry ~ disk_diameter_wet, data = pinon_data)
+summary(Model_disk_wetdry)
+#Coefficients:
+#                   Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)       -0.112872   0.116967  -0.965    0.347    
+#disk_diameter_wet  0.950785   0.008585 110.750   <2e-16 ***
+
+# Reformatting RCD data for plotting
+# separate the diameter variables
+RCD_wet <- data.frame(pinon_data$diameter_at_base_wet)
+Disk_wet <- data.frame(pinon_data$disk_diameter_wet)
+Disk_dry <- data.frame(pinon_data$disk_diameter_dry)
+
+#combine RCD variable with disk variables
+Disk_wet <- cbind(RCD_wet, Disk_wet)
+Disk_dry <- cbind(RCD_wet, Disk_dry)
+
+#assign the wet and dry categorigal variables
+Disk_wet$Group <- "Wet"
+Disk_dry$Group <- "Dry"
+
+#rename columns
+colnames(Disk_wet) <- c("RCD", "Disk_diam", "Group")
+colnames(Disk_dry) <- c("RCD", "Disk_diam", "Group")
+
+#coimbine into a single dataframe
+RCD_compare <- rbind(Disk_wet, Disk_dry)
+
+ggplot(data = RCD_compare, aes( x = RCD, y = Disk_diam, fill = Group )) +
+   geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black") +
+   geom_point(shape = 21, size = 2) +
+   geom_smooth(aes(group = Group), method = "lm", formula = "y~x", color = "black", size = 0.6, fill = "grey20") +
+   scale_fill_manual(values = c("black", "white")) +
+   theme_classic() +
+   theme(axis.text = element_text(size = 10, color = "black"),
+         axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+         axis.title = element_text(size = 10),
+         panel.grid = element_blank(),
+         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+         panel.border = element_rect(colour = "black", fill=NA, size = 0.8),
+         legend.title = element_blank(),
+         legend.text = element_text(size = 10),
+         legend.key.size = unit(1,"line"),
+         legend.position = c(0.4, 0.89),
+         legend.background=element_blank()) +
+   guides(fill=guide_legend(
+      keywidth=0.1,
+      keyheight=.6,
+      default.unit="cm")
+   ) + #this bit allows for adjusting the distance between legend symbols so I can allign with the R2 values
+   scale_y_continuous(limits=c(0,24), breaks=seq(0,24,4), expand = c(0.01,0)) +
+   scale_x_continuous(limits=c(0,24), breaks=seq(0,24,4), expand = c(0.01,0)) +
+   xlab("RCD (cm)") +
+   ylab("Disk diameter (cm)") +
+   stat_poly_eq(formula = "y~x",
+                label.x = "centre",
+                eq.with.lhs = "italic(hat(y))~`=`~",
+                aes(label = paste(stat(adj.rr.label),sep = "")), rr.digits = 3,
+                label.x.npc = "left",
+                parse = TRUE)
 
 
+#save the figure to WD
+ggsave("RCD_disk_compare.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+
+#------
+# Model for comparing biomass as a function of UAV derived canopy area (CA1)
+Model_biomass_CA1 <- lm(dry_mass_total_kg ~ canopy_area, data = pinon_data)
+summary(Model_biomass_CA1)
+#Coefficients:
+#            Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)   22.578     16.110   1.402   0.1781  
+#canopy_area    4.083      2.215   1.843   0.0818 ns
+
+# Model for comparing biomass as a function of field measured canopy area (CA2)
+Model_biomass_CA2 <- lm(dry_mass_total_kg ~ canopy_area_from_daim, data = pinon_data)
+summary(Model_biomass_CA2)
+#Coefficients:
+#                      Estimate Std. Error t value Pr(>|t|)  
+#(Intercept)             22.791     16.067   1.419    0.173  
+#canopy_area_from_daim    3.758      2.047   1.836    0.083 ns
+
+#exploratory plot of this relationship
+ggplot(data = pinon_data, aes(x = canopy_area_from_daim, y = dry_mass_total_kg)) +
+   geom_point() +
+   geom_smooth(method = "lm", formula = "y~x")
+#There must be an error with the data for tree P13. It shows the highest canopy area (19.9 m2),
+#but is quite small by all other metrics: RCD=6.4cm, height=1.2m, Check w/ Andy. 
+#Photos of P13 are unremarkable. 
+
+# Reformatting RCD data for plotting
+# separate the diameter variables
+RCD_wet <- data.frame(pinon_data$diameter_at_base_wet)
+Disk_wet <- data.frame(pinon_data$disk_diameter_wet)
+Disk_dry <- data.frame(pinon_data$disk_diameter_dry)
+
+#combine RCD variable with disk variables
+Disk_wet <- cbind(RCD_wet, Disk_wet)
+Disk_dry <- cbind(RCD_wet, Disk_dry)
+
+#assign the wet and dry categorigal variables
+Disk_wet$Group <- "Wet"
+Disk_dry$Group <- "Dry"
+
+#rename columns
+colnames(Disk_wet) <- c("RCD", "Disk_diam", "Group")
+colnames(Disk_dry) <- c("RCD", "Disk_diam", "Group")
+
+#coimbine into a single dataframe
+RCD_compare <- rbind(Disk_wet, Disk_dry)
+
+#-------------------------------------------------------------------------------
+# wet base diameter as predictor of total tree biomass
+# The relationship between diameter and biomass is  nonlinear (power)
+# nls = nonlinear least squares, a method in R to directly fit an nonlinear model, and the default algorithm used in nls is a Gauss-Newton algorithm.
+# Statistical model
+model.rcd.biomass <- nls(dry_mass_total_kg ~ a*diameter_at_base_wet^b,
+                               data = pinon_data,
+                               start = list(a =1, b =1),
+                               na.action=na.exclude)
+summary(model.rcd.biomass) # Return model parameters
+#Parameters:
+#   Estimate Std. Error t value Pr(>|t|)    
+# a  0.01841    0.03096   0.595    0.559    
+# b  2.85091    0.55210   5.164 6.52e-05 ***
+
+# Calculate prediction intervals from function predictNLS in the propagate package
+preds.rcd <- data.frame(x = seq(1.0, 22.5, 0.5))  # create dataframe with example values for plotting
+colnames(preds.rcd) <- c("diameter_at_base_wet")  # Label column.
+prop.rcd <- predictNLS(model.rcd.biomass, newdata = preds.rcd)  # Predict upper and lower values
+
+preds.rcd$dry_mass_total_kg <- prop.rcd$summary[,2]  # Mean prediction.
+preds.rcd$Lower.CI <- prop.rcd$summary[,5]
+preds.rcd$Upper.CI <- prop.rcd$summary[,6]
+#THESE PREDICTION DONT LOOK RIGHT!
+# https://stats.stackexchange.com/questions/162691/how-do-i-define-a-confidence-band-for-a-custom-nonlinear-function
+
+#Figure: Total biomass as a function of RCD
+ggplot(data = pinon_data, aes(x = diameter_at_base_wet, y = dry_mass_total_kg)) +
+   coord_cartesian(ylim = c(0, 200)) + 
+   #Chojnacky et al. 2014 (Table 5. Woodland, Pinaceae)
+   stat_function(fun = function(x) exp(-2.5356+2.4349*log(x)), aes(colour = "A"), size=1, lty = "dashed") +
+   #Jenkins et al., 2003 (Table 1. Softwood, Pine)
+   stat_function(fun = function(x) exp(-3.2007+2.5339*log(x)), aes(colour = "B"), size=1, lty = "dashed") +
+   #Grier et al. 1992 (Table 2. Pinon young+mature combined total) 
+   stat_function(fun = function(x) 10^(-1.468+2.582*log10(x)), aes(colour = "c"), size=1, lty = "dashed") +
+   geom_point(na.rm = TRUE, alpha=0.7) +
+   stat_function(fun = function(x) (coef(summary(model.rcd.biomass))[, "Estimate"])[1]*(x)^(coef(summary(model.rcd.biomass))[, "Estimate"])[2],
+                 aes(colour="D"), size = 1, lty = "solid") +
+   scale_color_manual(labels = c(  "Chojnacky et al. 2014",
+                                   "Jenkins et al. 2003",
+                                   "Grier et al. 1992",
+                                   "This study"), 
+                        values = c("red",
+                                   "blue", 
+                                   "orange",
+                                   "black")) +
+  geom_ribbon(data = preds.rcd, aes( x = diameter_at_base_wet, y = dry_mass_total_kg,
+                                     ymin = Lower.CI, ymax = Upper.CI), fill = "grey50", alpha = 0.3) + #plot the 95% CI
+  labs(x = expression(RCD~(cm)),
+       y = expression(Dry~biomass~(Kg))) +
+  theme(legend.position=c(0.2, 0.8))
+
+#-------------------------------------------------------------------------------
+# Sapwood area as a function of wet disk diameter
+model.disk_sapwoodarea <- nls(sapwood_area ~ a*disk_diameter_wet^b,
+                         data = pinon_data,
+                         start = list(a =1, b =1),
+                         na.action=na.exclude)
+summary(model.disk_sapwoodarea) # Return model parameters
+
+#Parameters:
+#  Estimate Std. Error t value Pr(>|t|)    
+#a   0.8777     0.5605   1.566    0.135    
+#b   1.6948     0.2156   7.861 3.15e-07 ***
+   
+# Calculate prediction intervals from function predictNLS in the propagate package
+preds.SWA <- data.frame(x = seq(1.0, 22.5, 0.5))  # create dataframe with example values for plotting
+colnames(preds.SWA) <- c("disk_diameter_wet")  # Label column.
+prop.SWA <- predictNLS(model.disk_sapwoodarea, newdata = preds.SWA)  # Predict upper and lower values
+
+#compile model predictions into a dataframe
+preds.SWA$sapwood_area <- prop.SWA$summary[,1]  # Mean prediction
+preds.SWA$Lower.CI <- prop.SWA$summary[,5] # Lower bounds of the CI (2.5%)
+preds.SWA$Upper.CI <- prop.SWA$summary[,6] # Upper bounds of the CI (97.5%) 
+
+#Figure: Total biomass as a function of RCD
+ggplot(data = pinon_data, aes(x = disk_diameter_wet, y = sapwood_area)) +
+   geom_point(na.rm = TRUE, alpha=0.7) +
+   geom_ribbon(data = preds.SWA, aes(x = disk_diameter_wet, y = sapwood_area,
+                                     ymin = Lower.CI, ymax = Upper.CI), fill = "grey50", alpha = 0.3) + #plot the 95% CI. This looks huge!
+   stat_function(fun = function(x) (coef(summary(model.disk_sapwoodarea))[, "Estimate"])[1]*(x)^(coef(summary(model.disk_sapwoodarea))[, "Estimate"])[2],
+                 size = 1, lty = "solid") +
+   theme(axis.text = element_text(size = 10, color = "black"),
+         axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+         axis.title = element_text(size = 10),
+         panel.grid = element_blank(),
+         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+         panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
+    labs(x = expression(Sapwood~area~(cm^2)), 
+         y = expression(Dry~biomass~(Kg)))
 
 
+# examining residuals (ABS)      
+model.disk.SWA.res <-  resid(model.disk_sapwoodarea)
+# 
+# Add residuals to dataframe, and compute normalised residuals (for plotting).
+pinon_data$swa_residuals  <- model.disk.SWA.res
+pinon_data$normalised_swa_residuals <- (pinon_data$swa_residuals/pinon_data$sapwood_area)
+
+# plot the SWA residuals as a function of wet stem diameter
+ggplot(data = pinon_data, aes(x=disk_diameter_wet, y=normalised_swa_residuals)) +
+   geom_point() +
+   geom_hline(yintercept = 0) +
+   theme_classic() +
+   theme(axis.text = element_text(size = 10, color = "black"),
+         axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+         axis.title = element_text(size = 10),
+         panel.grid = element_blank(),
+         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+         panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
+   scale_y_continuous(limits=c(-1.2,1), breaks=seq(-1.5,1,0.5), expand = c(0.01,0)) +
+   scale_x_continuous(limits=c(0,24), breaks=seq(0,24,4), expand = c(0.01,0)) +
+   xlab("Wet disk diameter (cm)") +
+   ylab("SWA normalized residuals")
+
+#save the figure to WD
+ggsave("SWA residuals.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 
-
+ # ----
+ # max_height as predictor of total tree biomass
+ # The relationship between maximum height and biomass is  nonlinear (power)
+ # nls = nonlinear least squares, a method in R to directly fit an nonlinear model, and the default algorithm used in nls is a Gauss-Newton algorithm.
+ # Statistical model
+ model.maxheight.biomass <- nls(dry_mass_total_kg ~ a*drone_canopy_height_max^b,
+                                data = pinon_data,
+                                start = list(a =1, b =1),
+                                na.action=na.exclude)
+ summary(model.maxheight.biomass) # Return model parameters
+ #Parameters:
+ #  Estimate Std. Error t value Pr(>|t|)    
+ #a   5.8322     4.1856   1.393 0.180468    
+ #b   1.6255     0.4129   3.937 0.000967 ***
+ 
+ 
+ 
+ 
+ 
 ###################################################
 #### Old script from Juniper to recycle/remove ####
 ###################################################
-
-
-
-
 
 # # Reformatting data for plotting
 # # Reformat canopy area versus biomass object for plotting.
