@@ -4,8 +4,6 @@
 
 # Establish operating environment ----
 rm(list=ls())
-#setwd("C:\Users\cmcintire\Desktop")
-#path <- getwd()
 
 # Load required packages ----
 #   # Download
@@ -210,7 +208,7 @@ ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
          panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
    scale_y_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
    scale_x_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
-   xlab("Measued height (m)") +
+   xlab("Measured height (m)") +
    ylab("UAV estimated height (m)") +
    stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
                 formula = "y~x", 
