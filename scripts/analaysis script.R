@@ -106,30 +106,13 @@ pinon_data$HAG_plotmean_of_cellmax_m = as.numeric(pinon_data$HAG_plotmean_of_cel
 pinon_data$HAG_plotmedian_of_cellmax_m = as.numeric(pinon_data$HAG_plotmedian_of_cellmax_m)
 pinon_data$HAG_plot90percentile_of_cellmax_m = as.numeric(pinon_data$HAG_plot90percentile_of_cellmax_m)
 
-#There must be an error with the data for tree P13. It shows the highest canopy area (19.9 m2),
-#but is quite small by all other metrics: RCD=6.4cm, height=1.2m, Check w/ Andy. 
-#Photos of P13 are unremarkable. 
-
-# TEMPORARY FIX FOR CANOPY DIMENTION DATA - I suspect that the canopy data for
-# P13 and p14 was switched, all other values looks right (diam, biomass, etc)
-# For now I am manually editing the data in the cells for these 2 trees
-
-pinon_data[13, "canopy_area"] <- 1.09655
-pinon_data[13, "CanDia1"] <- 1.518
-pinon_data[13, "CanDia2"] <- 0.996
-pinon_data[14, "canopy_area"] <- 18.11025
-pinon_data[14, "CanDia1"] <- 5.257
-pinon_data[14, "CanDia2"] <- 4.843
-
-
 # Calculate canopy area from a and b diameters
 pinon_data$canopy_area_from_daim <- pi * (pinon_data$CanDia1)/2 * (pinon_data$CanDia2)/2
 
 
 
-
-
 # Linear models
+#---- --------------------------------------------------------------------------
 
 # Model for comparing canopy area from polygons (CA1) and field obs (CA2)
 Model_CA1_CA2 <- lm(canopy_area_from_daim ~ canopy_area, data = pinon_data)
@@ -203,6 +186,7 @@ summary(Model_height)
 rmse(pinon_data$drone_canopy_height_max, predict(Model_height, pinon_data))
 # RMSE = 0.4000207
 
+#----
 # Testing difference between field measured height and drone measured height
 height_difference <- pinon_data$drone_canopy_height_max - pinon_data$max_height
 # Assessing data distribution
@@ -214,9 +198,8 @@ shapiro.test(height_difference)
 # these data are signifcantly non-normal, so a non-parametric test is needed.
 # Wilcoxon signed-rank test
 wilcox.test(pinon_data$drone_canopy_height_max, pinon_data$max_height,
-            paired = TRUE, alternative = "less",
-            conf.int = TRUE)
-# Result: height derived from drone and field measured are not sig different
+            alternative=c("two.sided", "less", "greater"))
+# Result: height derived from drone and field measured are not sig different (p=0.7763)
 
 # Plot drone derive height as a function of measured height
 ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
@@ -242,8 +225,7 @@ ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
 #save the figure to WD
 ggsave("plots/maxheight_droneheight.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
-
-#-------------------------------------------------------------------------------
+#-----
 # Model for comparing RCD to field measured height
 Model_RCD_height <- lm(max_height ~ diameter_at_base_wet, data = pinon_data) 
 summary(Model_RCD_height) 
@@ -269,7 +251,7 @@ ggplot(pinon_data, aes(x = diameter_at_base_wet, y = max_height)) +
          panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
    scale_y_continuous(limits=c(-0.2,7), breaks=seq(0,6,2), expand = c(0,0)) +
    scale_x_continuous(limits=c(-0.5,24), breaks=seq(0,24,5), expand = c(0,0)) +
-   xlab("RCD (m)") +
+   xlab("RCD (cm)") +
    ylab("Maximum tree height  (m)") +
    stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
                 formula = "y~x", 
@@ -277,8 +259,6 @@ ggplot(pinon_data, aes(x = diameter_at_base_wet, y = max_height)) +
 
 #save the figure to WD
 ggsave("plots/RCD_maxheight.tiff", width = 10, height = 10, units = "cm", dpi = 500)
-
-
 
 #------
 # Model for comparing bark-thickness to RCD
@@ -288,7 +268,6 @@ summary(Model_barkthickness)
 #                  Estimate Std. Error t value Pr(>|t|)    
 #(Intercept)       0.129403   0.063568   2.036   0.0568 .  
 #disk_diameter_wet 0.055105   0.004666  11.811 6.52e-10 ***
-
 
 # calculate RMSE for this model
 rmse(pinon_data$bark_thickness, predict(Model_barkthickness, pinon_data))
@@ -324,6 +303,20 @@ ggplot(data = pinon_data, aes( x = disk_diameter_wet, y = bark_thickness )) +
 ggsave("plots/barkthickness.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #------
+# Testing difference between field measured height and drone measured height
+disk_difference <- pinon_data$disk_diameter_wet - pinon_data$disk_diameter_dry
+# Assessing data distribution
+length(disk_difference)
+qqnorm(disk_difference)
+qqline(disk_difference)       
+shapiro.test(disk_difference)
+# W = 0.87833, p-value = 0.01651
+# these data are signifcantly non-normal, so a non-parametric test is needed.
+# Wilcoxon signed-rank test
+wilcox.test(pinon_data$disk_diameter_wet, pinon_data$disk_diameter_dry,
+            alternative=c("two.sided", "less", "greater"))
+#Result: wet and dry disk diameters are not sig different (p=0.57)
+
 # Model for comparing wet and dry disk diameters
 Model_disk_wetdry <- lm(disk_diameter_dry ~ disk_diameter_wet, data = pinon_data)
 summary(Model_disk_wetdry)
@@ -386,7 +379,6 @@ ggplot(data = RCD_compare, aes( x = RCD, y = Disk_diam, fill = Group )) +
                 aes(label = paste(stat(adj.rr.label),sep = "")), rr.digits = 3,
                 label.x.npc = "left",
                 parse = TRUE)
-
 
 #save the figure to WD
 ggsave("plots/RCD_disk_compare.tiff", width = 10, height = 10, units = "cm", dpi = 500)
