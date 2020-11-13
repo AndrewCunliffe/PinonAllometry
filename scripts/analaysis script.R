@@ -91,6 +91,32 @@ pinon_data$proportion_small_biomass <- pinon_data$dry_mass_small_partititon / pi
 # calculate the proportion of the total biomass that is > 3 cm
 pinon_data$proportion_large_biomass <- pinon_data$dry_mass_large_partititon / pinon_data$dry_mass_total_g
 
+#RCD to DBH conversion from Chojnacky $ Rogers (1999)
+#DBH = B0 + B1*RCD + B2*stm +B3*PIED + B4*RCDp + B5*QUGA +B6*RCDq
+
+# DBH = diameter at 1.3 m above ground level
+# RCD = diameter at root collar
+
+#metric parameter values
+B0 = -6.8180
+B1 = 1.0222
+B2 = 1.8879
+B3 = 1.8971
+B4 = -0.0399
+B5 = 3.1100
+B6 = -0.689
+stm = 1.0
+PIED = 1.0
+QUGA = 0.0
+RCDq = 0.0
+
+#apply the conversion for all trees >1.3 m tall (short trees wont have a dbh)
+pinon_data$DBH_cm <- ifelse(pinon_data$max_height > 1.3,
+                            B0 + B1*pinon_data$diameter_at_base_wet + B2*stm +B3*PIED + B4*pinon_data$diameter_at_base_wet + B5*QUGA +B6*RCDq,
+                            NA)
+
+B0 + B1*x + B2*stm +B3*PIED + B4*x
+
 
 # Linear models
 #---- --------------------------------------------------------------------------
@@ -570,22 +596,28 @@ preds.rcd$Upper.CI <- prop.rcd$summary[,6]
 #THESE PREDICTION DONT LOOK RIGHT! Very large CI
 # https://stats.stackexchange.com/questions/162691/how-do-i-define-a-confidence-band-for-a-custom-nonlinear-function
 
+fun_jenkins
+
 #Figure: Total biomass as a function of RCD
 ggplot(data = pinon_data, aes(x = diameter_at_base_wet, y = dry_mass_total_kg)) +
-   #Chojnacky et al. 2014 (Table 5. Woodland, Pinaceae)
-   stat_function(fun = function(x) exp(-2.5356+2.4349*log(x)), aes(colour = "A"), size=0.5, lty = "dashed") +
-   #Jenkins et al., 2003 (Table 1. Softwood, Pine)
-   stat_function(fun = function(x) exp(-3.2007+2.5339*log(x)), aes(colour = "B"), size=0.5, lty = "dashed") +
-   #Grier et al. 1992 (Table 2. Pinon young+mature combined total) 
-   stat_function(fun = function(x) 10^(-1.468+2.582*log10(x)), aes(colour = "c"), size=0.5, lty = "dashed") +
    geom_point(na.rm = TRUE, size = 2) +
+   #Darling 1967 (Table 12, also see Huang et al. 2009)
+   stat_function(fun=function(x)0.024*x^2.67, geom="line", aes(colour="A"),, lty = "dashed") +
+   #Grier et al. 1992 (Table 2. Pinon young+mature combined total) 
+   stat_function(fun = function(x) 10^(-1.468+2.582*log10(x)), aes(colour = "B"), size=0.5, lty = "dashed") +
+   #Jenkins et al., 2003 (Table 1. Softwood, Pine)
+   stat_function(fun = function(x) exp(-2.5356+2.4349*log(-6.8180+1.0222*x+1.8879*1)), aes(colour = "C"), size=0.5, lty = "dashed") +
+   #Chojnacky et al. 2014 (Table 5. Woodland, Pinaceae)
+   stat_function(fun = function(x) exp(-3.2007+2.5339*log(x)), aes(colour = "D"), size=0.5, lty = "dashed") +
    stat_function(fun = function(x) (coef(summary(model.rcd.biomass))[, "Estimate"])[1]*(x)^(coef(summary(model.rcd.biomass))[, "Estimate"])[2],
-                 aes(colour="D"), size = 1, lty = "solid") +
-   scale_color_manual(labels = c(  "Chojnacky et al. 2014",
-                                   "Jenkins et al. 2003",
+                 aes(colour="E"), size = 1, lty = "solid") +
+   scale_color_manual(labels = c(  "Darling 1967",
                                    "Grier et al. 1992",
+                                   "Jenkins et al. 2003",
+                                   "Chojnacky et al. 2014",
                                    "This study"), 
-                      values = c("red",
+                      values = c("purple",
+                                 "red",
                                  "blue", 
                                  "orange",
                                  "black")) +
@@ -599,15 +631,22 @@ ggplot(data = pinon_data, aes(x = diameter_at_base_wet, y = dry_mass_total_kg)) 
          legend.title = element_blank(),
          legend.text = element_text(size = 10),
          legend.key.size = unit(1,"line"),
-         legend.position = c(0.4, 0.8),
+         legend.position = c(0.3, 0.8),
          legend.background=element_blank()) +
    scale_y_continuous(limits=c(0,200), breaks=seq(0,200,50), expand = c(0.01,0)) +
    scale_x_continuous(limits=c(0,24), breaks=seq(0,24,4), expand = c(0.01,0)) +
    xlab("RCD (cm)") +
    ylab("Dry biomass (kg)")
 
+# Note that Jenkins equations requires measurements of DBH, thus we apply the 
+# RCD to DBH conversion from Chojnacky and Rogers 1999.
+# R spits out a warning message that NaNs are produced, which is b/c 6 trees 
+# are < 1.3 m tall and will give negative values. However the curve looks correct. 
+
 #save the figure to WD
 ggsave("plots/RCD_biomass.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+
+#Note that Jenkins eqn and this studies' eqn will converge at RCD = 35.2 cm
 
 #-------------------------------------------------------------------------------
 # Sapwood area as a function of wet disk diameter
@@ -626,22 +665,25 @@ rmse(pinon_data$sapwood_area, predict(model.disk_sapwoodarea, pinon_data))
 # RMSE = 17.96945
 
 # Calculate prediction intervals from function predictNLS in the propagate package
-preds.SWA <- data.frame(x = seq(1.0, 22.5, 0.5))  # create dataframe with example values for plotting
-colnames(preds.SWA) <- c("disk_diameter_wet")  # Label column.
-prop.SWA <- predictNLS(model.disk_sapwoodarea, newdata = preds.SWA)  # Predict upper and lower values
+##preds.SWA <- data.frame(x = seq(1.0, 22.5, 0.5))  # create dataframe with example values for plotting
+##colnames(preds.SWA) <- c("disk_diameter_wet")  # Label column.
+##prop.SWA <- predictNLS(model.disk_sapwoodarea, newdata = preds.SWA)  # Predict upper and lower values
 
 #aggregate the predicted values in a new dataframe
-preds.SWA$sapwood_area <- prop_SWA$summary[,1]  # Mean prediction
-preds.SWA$Lower.CI <- prop_SWA$summary[,5] # Lower bounds of the CI (2.5%)
-preds.SWA$Upper.CI <- prop_SWA$summary[,6] # Upper bounds of the CI (97.5%) 
+##preds.SWA$sapwood_area <- prop_SWA$summary[,1]  # Mean prediction
+##preds.SWA$Lower.CI <- prop_SWA$summary[,5] # Lower bounds of the CI (2.5%)
+##preds.SWA$Upper.CI <- prop_SWA$summary[,6] # Upper bounds of the CI (97.5%) 
 #These CI values are also huge at the upper end. This is odd, b/c the 95% CI
 #for a linear model appears much tighter, despite it being a worse fit...
 
 #Figure: Total biomass as a function of RCD
 ggplot(data = pinon_data, aes(x = disk_diameter_wet, y = sapwood_area)) +
    geom_point(na.rm = TRUE, size = 2) +
+   stat_function(fun=function(x)0.8112*x^1.7341, geom="line", aes(color = "B"), size = 1, linetype = "dashed") +
    stat_function(fun = function(x) (coef(summary(model.disk_sapwoodarea))[, "Estimate"])[1]*(x)^(coef(summary(model.disk_sapwoodarea))[, "Estimate"])[2],
-                 size = 1, lty = "solid") +
+                 size = 1, aes(color = "A")) +
+   scale_color_manual(labels = c("This study","Pangel et al. 2015"), 
+                      values = c("black", "red")) +
    theme_classic() +
    theme(axis.text = element_text(size = 10, color = "black"),
          axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
@@ -652,14 +694,15 @@ ggplot(data = pinon_data, aes(x = disk_diameter_wet, y = sapwood_area)) +
          legend.title = element_blank(),
          legend.text = element_text(size = 10),
          legend.key.size = unit(1,"line"),
-         legend.position = c(0.4, 0.8),
+         legend.position = c(0.3, 0.65),
          legend.background=element_blank()) +
    scale_y_continuous(limits=c(0,200), breaks=seq(0,200,50), expand = c(0.01,0)) +
    scale_x_continuous(limits=c(0,24), breaks=seq(0,24,4), expand = c(0.01,0)) +
    labs(y = expression(Sapwood~area~(cm^2)), 
         x = expression(Disk~diameter~(cm))) +
-   annotate("text", x = 6, y = 180, label = "italic(y)==0.877~italic(x)^1.695", parse = TRUE, size = 3.5, family = "ariel") +
-   annotate("text", x = 6, y = 160, label = "italic(RMSE)==17.969", parse = TRUE, size = 3.5, family = "ariel") 
+   guides(size = FALSE, linetype = FALSE) +
+   annotate("text", x = 6, y = 180, label = "italic(y)==0.877~italic(x)^1.695", parse = TRUE, size = 3.5) +
+   annotate("text", x = 6, y = 160, label = "italic(RMSE)==17.969", parse = TRUE, size = 3.5) 
 
 #save the figure to WD
 ggsave("plots/RCD_SWA.tiff", width = 10, height = 10, units = "cm", dpi = 500)
@@ -757,9 +800,10 @@ rmse(Height_biomass_no_outlier$dry_mass_total_kg,
      predict(model.maxheight.biomass.no.outlier, Height_biomass_no_outlier))
 # RMSE = 9.456181
 
-
+#plot without the outlier
 ggplot(data = Height_biomass_outlier, aes( x = max_height, y = dry_mass_total_kg, fill = group)) +
    geom_point(size = 2, shape = 21) +
+   stat_function(fun=function(x)4.0871*x^1.8059, geom="line", aes(color = "B"), size = 0.5, linetype = "dashed") +
    stat_function(fun = function(x) (coef(summary(model.maxheight.biomass.no.outlier))[, "Estimate"])[1]*(x)^(coef(summary(model.maxheight.biomass.no.outlier))[, "Estimate"])[2],
                  size = 1, lty = "solid") +
    scale_fill_manual(values = c("black", "white")) +
