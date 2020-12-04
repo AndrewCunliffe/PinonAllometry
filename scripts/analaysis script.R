@@ -2,9 +2,6 @@
 ## Andrew Cunliffe <andrewmcunliffe@gmail.com> & Cameron McIntire
 ## Started 2020-10-26
 
-# Establish operating environment ----
-rm(list=ls())
-
 # Load required packages ----
 #   # Download
 if(!require(tidyverse)) {install.packages("tidyverse"); require(tidyverse)}
