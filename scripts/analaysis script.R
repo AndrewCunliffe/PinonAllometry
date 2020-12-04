@@ -42,6 +42,9 @@ pinon_data <- read.csv("data/pinon_data.csv", header = T)[-1,]  # Read in summar
 # Specify numeric types
 pinon_data$longitude = as.numeric(pinon_data$longitude)
 pinon_data$latitude = as.numeric(pinon_data$latitude)
+pinon_data$tot_needle_wt = as.numeric(pinon_data$tot_needle_wt)
+pinon_data$scanned_LA = as.numeric(pinon_data$scanned_LA)
+pinon_data$scanned_wt = as.numeric(pinon_data$scanned_wt)
 pinon_data$canopy_area = as.numeric(pinon_data$canopy_area)
 pinon_data$canopy_area = as.numeric(pinon_data$canopy_area)
 pinon_data$CanDia1 = as.numeric(pinon_data$CanDia1)
@@ -81,6 +84,18 @@ pinon_data$drone_canopy_height_max = as.numeric(pinon_data$drone_canopy_height_m
 pinon_data$HAG_plotmean_of_cellmax_m = as.numeric(pinon_data$HAG_plotmean_of_cellmax_m)
 pinon_data$HAG_plotmedian_of_cellmax_m = as.numeric(pinon_data$HAG_plotmedian_of_cellmax_m)
 pinon_data$HAG_plot90percentile_of_cellmax_m = as.numeric(pinon_data$HAG_plot90percentile_of_cellmax_m)
+#-------------------------------------------------------------------------------
+#calculate LMA from scanned and weighed needle subsamples (g m-2)
+pinon_data$LMA = pinon_data$scanned_wt/(pinon_data$scanned_LA/10000)
+
+#calculate the mean and standard deviation of SLA 
+LMA_mean = mean(pinon_data$LMA, na.rm = TRUE)
+sd(pinon_data$LMA, na.rm = TRUE)
+#mean LMA = 263.0, standard deviation = 28.9
+
+#estimate the total leaf area (m2) by scaling LMA with measured total needle weight 
+pinon_data$LA_m2 = pinon_data$tot_needle_wt/LMA_mean
+
 
 # Calculate canopy area from a and b diameters
 pinon_data$canopy_area_from_daim <- pi * (pinon_data$CanDia1)/2 * (pinon_data$CanDia2)/2
@@ -428,6 +443,10 @@ summary(Model_biomass_CA1)
 # (Intercept)   -6.099      4.635  -1.316    0.205    
 # canopy_area   10.144      0.665  15.253 9.74e-12 ***
 
+# calculate RMSE for this model
+rmse(pinon_data$dry_mass_total_kg, predict(Model_biomass_CA1, pinon_data))
+# RMSE = 13.90078
+
 # Model for comparing biomass as a function of orthogonal derived canopy area (CA2)
 Model_biomass_CA2 <- lm(dry_mass_total_kg ~ canopy_area_from_daim, data = pinon_data)
 summary(Model_biomass_CA2)
@@ -435,6 +454,10 @@ summary(Model_biomass_CA2)
 #                       Estimate Std. Error t value Pr(>|t|)  
 # (Intercept)            -4.6848     4.5730  -1.024    0.319    
 # canopy_area_from_daim   9.6429     0.6327  15.241 9.87e-12 ***
+
+# calculate RMSE for this model
+rmse(pinon_data$dry_mass_total_kg, predict(Model_biomass_CA2, pinon_data))
+# RMSE = 13.91119
 
 # Reformatting CA data for plotting with biomass
 # separate the diameter variables
@@ -596,7 +619,6 @@ preds.rcd$Upper.CI <- prop.rcd$summary[,6]
 #THESE PREDICTION DONT LOOK RIGHT! Very large CI
 # https://stats.stackexchange.com/questions/162691/how-do-i-define-a-confidence-band-for-a-custom-nonlinear-function
 
-fun_jenkins
 
 #Figure: Total biomass as a function of RCD
 ggplot(data = pinon_data, aes(x = diameter_at_base_wet, y = dry_mass_total_kg)) +
@@ -679,11 +701,13 @@ rmse(pinon_data$sapwood_area, predict(model.disk_sapwoodarea, pinon_data))
 #Figure: Total biomass as a function of RCD
 ggplot(data = pinon_data, aes(x = disk_diameter_wet, y = sapwood_area)) +
    geom_point(na.rm = TRUE, size = 2) +
-   stat_function(fun=function(x)0.8112*x^1.7341, geom="line", aes(color = "B"), size = 1, linetype = "dashed") +
+   stat_function(fun=function(x)0.8112*x^1.7341, geom="line", aes(color = "B"), size = 0.6, linetype = "dashed") +
+   stat_function(fun=function(x)0.53*x, geom="line", aes(color = "C"), size = 0.6, linetype = "dashed") +
    stat_function(fun = function(x) (coef(summary(model.disk_sapwoodarea))[, "Estimate"])[1]*(x)^(coef(summary(model.disk_sapwoodarea))[, "Estimate"])[2],
                  size = 1, aes(color = "A")) +
-   scale_color_manual(labels = c("This study","Pangel et al. 2015"), 
-                      values = c("black", "red")) +
+   scale_color_manual(labels = c("This study","Pangle et al. 2015","West et al. 2008"), 
+                      values = c("black", "red","blue"))
+
    theme_classic() +
    theme(axis.text = element_text(size = 10, color = "black"),
          axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
@@ -801,12 +825,13 @@ rmse(Height_biomass_no_outlier$dry_mass_total_kg,
 # RMSE = 9.456181
 
 #plot without the outlier
-ggplot(data = Height_biomass_outlier, aes( x = max_height, y = dry_mass_total_kg, fill = group)) +
+ggplot(data = Height_biomass_outlier, aes( x = max_height, y = dry_mass_total_kg, fill = group, color = group)) +
    geom_point(size = 2, shape = 21) +
-   stat_function(fun=function(x)4.0871*x^1.8059, geom="line", aes(color = "B"), size = 0.5, linetype = "dashed") +
+   stat_function(fun=function(x)4.0871*x^1.8059, geom="line", color = "Red", size = 0.6, linetype = "dashed") +
    stat_function(fun = function(x) (coef(summary(model.maxheight.biomass.no.outlier))[, "Estimate"])[1]*(x)^(coef(summary(model.maxheight.biomass.no.outlier))[, "Estimate"])[2],
-                 size = 1, lty = "solid") +
+                 size = 1, lty = "solid", color = "black") +
    scale_fill_manual(values = c("black", "white")) +
+   scale_color_manual(values = c("black", "red")) +
    theme_classic() +
    theme(axis.text = element_text(size = 10, color = "black"),
          axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
@@ -822,14 +847,67 @@ ggplot(data = Height_biomass_outlier, aes( x = max_height, y = dry_mass_total_kg
    scale_y_continuous(limits=c(0,200), breaks=seq(0,200,50), expand = c(0.01,0)) +
    scale_x_continuous(limits=c(0,8), breaks=seq(0,8,2), expand = c(0.01,0)) +
    annotate("text", x = 2, y = 180, label = "italic(y)==0.971~italic(x)^2.563", parse = TRUE, size = 3.5, family = "ariel") +
-   annotate("text", x = 2, y = 160, label = "italic(RMSE)==9.47", parse = TRUE, size = 3.5, family = "ariel") +
+   annotate("text", x = 2, y = 160, label = "italic(RMSE)==9.46", parse = TRUE, size = 3.5, family = "ariel") +
    labs(x = expression(Maximum~tree~height~(m)), 
         y = expression(Dry~biomass~(kg))) 
 
 #save the figure to WD
 ggsave("plots/Height_biomass_no_outlier.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
+# ------------------------------------------------------------------------------
+#isolate the subset of trees w/ leaf area data
+LA_data <- subset(pinon_data, select=c(tree_id,diameter_at_base_wet,LA_m2,
+                                       canopy_area, canopy_area_from_daim))
+LA_data <- LA_data[!is.na(LA_data$LA_m2), ]
 
+# total leaf area as a function of RCD
+# Statistical model
+model.RCD.LA <- nls(LA_m2 ~ a*diameter_at_base_wet^b,
+                               data = LA_data,
+                               start = list(a =1, b =1),
+                               na.action=na.exclude,)
+summary(model.RCD.LA) # Return model parameters
+#Parameters:
+#   Estimate Std. Error t value Pr(>|t|)    
+# a 0.004025   0.002398   1.678  0.19189    
+# b 3.215904   0.203406  15.810  0.00055 ***
+
+# calculate RMSE for this model
+rmse(LA_data$LA_m2, predict(model.RCD.LA, LA_data))
+# RMSE = 0.9690882 wicked good!
+
+
+#plot this model with the Pangel et al. 2015 model
+ggplot(pinon_data, aes(x=diameter_at_base_wet, y=LA_m2)) +
+   geom_point(size=2) +
+   stat_function(fun = function(x) (coef(summary(model.RCD.LA))[, "Estimate"])[1]*(x)^(coef(summary(model.RCD.LA))[, "Estimate"])[2],
+                 size = 1, lty = "solid", aes(color = "A")) +
+   scale_color_manual(labels = c("This study","Pangle et al. 2015"), 
+                      values = c("black", "red")) +
+   stat_function(fun=function(x)0.0889*x^1.9172, geom="line", aes(color = "B"),
+                 size = 0.6, linetype = "dashed", xlim = c(0,20)) +
+   theme_classic() +
+   theme(axis.text = element_text(size = 10, color = "black"),
+         axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+         axis.title = element_text(size = 10),
+         panel.grid = element_blank(),
+         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+         panel.border = element_rect(colour = "black", fill=NA, size = 0.8),
+         legend.title = element_blank(),
+         legend.text = element_text(size = 10),
+         legend.key.size = unit(1,"line"),
+         legend.position = c(0.3, 0.70),
+         legend.background=element_blank()) +
+   scale_y_continuous(limits=c(0,60), breaks=seq(0,60,10), expand = c(0.01,0)) +
+   scale_x_continuous(limits=c(0,24), breaks=seq(0,24,4), expand = c(0.01,0)) +
+   labs(y = expression(Foliar~area~(m^2)), 
+        x = expression(RCD~(cm))) +
+   guides(size = FALSE, linetype = FALSE) +
+   annotate("text", x = 6, y = 56, label = "italic(y)==0.004~italic(x)^3.216", parse = TRUE, size = 3.5) +
+   annotate("text", x = 6, y = 52, label = "italic(RMSE)==0.969", parse = TRUE, size = 3.5)
+
+#save to WD
+ggsave("plots/RCD-foliar_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 #------------------------------------------------------------------------------
 #Tabulate variable means and standard deviations
 
