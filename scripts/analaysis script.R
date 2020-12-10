@@ -81,6 +81,7 @@ pinon_data$drone_canopy_height_max = as.numeric(pinon_data$drone_canopy_height_m
 pinon_data$HAG_plotmean_of_cellmax_m = as.numeric(pinon_data$HAG_plotmean_of_cellmax_m)
 pinon_data$HAG_plotmedian_of_cellmax_m = as.numeric(pinon_data$HAG_plotmedian_of_cellmax_m)
 pinon_data$HAG_plot90percentile_of_cellmax_m = as.numeric(pinon_data$HAG_plot90percentile_of_cellmax_m)
+
 #-------------------------------------------------------------------------------
 #calculate LMA from scanned and weighed needle subsamples (g m-2)
 pinon_data$LMA = pinon_data$scanned_wt/(pinon_data$scanned_LA/10000)
@@ -122,7 +123,7 @@ PIED = 1.0
 QUGA = 0.0
 RCDq = 0.0
 
-#apply the conversion for all trees >1.3 m tall (short trees wont have a dbh)
+# Apply the conversion for all trees > 1.3 m tall (short trees won't have a dbh)
 pinon_data$DBH_cm <- ifelse(pinon_data$max_height > 1.3,
                             B0 + B1*pinon_data$diameter_at_base_wet + B2*stm +B3*PIED + B4*pinon_data$diameter_at_base_wet + B5*QUGA +B6*RCDq,
                             NA)
