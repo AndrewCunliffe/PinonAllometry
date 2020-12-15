@@ -220,6 +220,12 @@ wilcox.test(pinon_data$drone_canopy_height_max, pinon_data$max_height,
             alternative=c("two.sided", "less", "greater"))
 # Result: height derived from drone & field measured are not sig different (p=0.7763)
 
+#compute the Lin's  correlation concordance coefficient
+CCC(pinon_data$max_height, pinon_data$drone_canopy_height_max, ci = "z-transform",
+               conf.level = 0.95)
+#        est    lwr.ci    upr.ci
+#  0.9792863 0.9489207 0.9916772
+
 # Plot drone derive height as a function of measured height
 ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
    geom_point(size = 2) +
@@ -235,8 +241,8 @@ ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
          panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
    scale_y_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
    scale_x_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
-   xlab("Measured height (m)") +
-   ylab("UAV estimated height (m)") +
+   xlab("Ground measured max height (m)") +
+   ylab("UAV measured max height (m)") +
    stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
                 formula = "y~x", 
                 parse = TRUE) #insert R2 and equation into the plot
@@ -461,18 +467,19 @@ rmse(pinon_data$dry_mass_total_kg, predict(Model_biomass_CA2, pinon_data))
 CA1 <- data.frame(pinon_data$canopy_area)
 CA2 <- data.frame(pinon_data$canopy_area_from_daim)
 Biomass <- data.frame(pinon_data$dry_mass_total_kg)
+SWA <- data.frame(pinon_data$sapwood_area)
 
 #combine RCD variable with disk variables
-CA1_biomass <- cbind(CA1, Biomass)
-CA2_biomass <- cbind(CA2, Biomass)
+CA1_biomass <- cbind(CA1, Biomass, SWA)
+CA2_biomass <- cbind(CA2, Biomass, SWA)
 
 #assign the wet and dry categorigal variables
 CA1_biomass$Group <- "CA1"
 CA2_biomass$Group <- "CA2"
 
 #rename columns
-colnames(CA1_biomass) <- c("CA", "Biomass", "Group")
-colnames(CA2_biomass) <- c("CA", "Biomass", "Group")
+colnames(CA1_biomass) <- c("CA", "Biomass","SWA", "Group")
+colnames(CA2_biomass) <- c("CA", "Biomass","SWA", "Group")
 
 #coimbine into a single dataframe
 CA_biomass <- rbind(CA1_biomass, CA2_biomass)
@@ -605,14 +612,14 @@ RCD.biomass.residuals %>%
 # Small trees   8.74  5.680 
 
 # Calculate prediction intervals from function predictNLS in the propagate package
-preds.rcd <- data.frame(x = seq(1.0, 22.5, 0.5))  # create dataframe with example values for plotting
-colnames(preds.rcd) <- c("diameter_at_base_wet")  # Label column.
-prop.rcd <- predictNLS(model.rcd.biomass, newdata = preds.rcd)  # Predict upper and lower values
+#preds.rcd <- data.frame(x = seq(1.0, 22.5, 0.5))  # create dataframe with example values for plotting
+#colnames(preds.rcd) <- c("diameter_at_base_wet")  # Label column.
+#prop.rcd <- predictNLS(model.rcd.biomass, newdata = preds.rcd)  # Predict upper and lower values
 
 #aggregate the predicted values in a new dataframe
-preds.rcd$dry_mass_total_kg <- prop.rcd$summary[,2]  # Mean prediction.
-preds.rcd$Lower.CI <- prop.rcd$summary[,5]
-preds.rcd$Upper.CI <- prop.rcd$summary[,6]
+#preds.rcd$dry_mass_total_kg <- prop.rcd$summary[,2]  # Mean prediction.
+#preds.rcd$Lower.CI <- prop.rcd$summary[,5]
+#preds.rcd$Upper.CI <- prop.rcd$summary[,6]
 #THESE PREDICTION DONT LOOK RIGHT! Very large CI
 # https://stats.stackexchange.com/questions/162691/how-do-i-define-a-confidence-band-for-a-custom-nonlinear-function
 
@@ -699,12 +706,11 @@ rmse(pinon_data$sapwood_area, predict(model.disk_sapwoodarea, pinon_data))
 ggplot(data = pinon_data, aes(x = disk_diameter_wet, y = sapwood_area)) +
    geom_point(na.rm = TRUE, size = 2) +
    stat_function(fun=function(x)0.8112*x^1.7341, geom="line", aes(color = "B"), size = 0.6, linetype = "dashed") +
-   stat_function(fun=function(x)0.53*x, geom="line", aes(color = "C"), size = 0.6, linetype = "dashed") +
+   stat_function(fun=function(x)0.53*(10*x)-15, geom="line", aes(color = "C"), size = 0.6, linetype = "dashed") +
    stat_function(fun = function(x) (coef(summary(model.disk_sapwoodarea))[, "Estimate"])[1]*(x)^(coef(summary(model.disk_sapwoodarea))[, "Estimate"])[2],
                  size = 1, aes(color = "A")) +
    scale_color_manual(labels = c("This study","Pangle et al. 2015","West et al. 2008"), 
-                      values = c("black", "red","blue"))
-
+                      values = c("black", "red","blue")) +
    theme_classic() +
    theme(axis.text = element_text(size = 10, color = "black"),
          axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
@@ -726,7 +732,7 @@ ggplot(data = pinon_data, aes(x = disk_diameter_wet, y = sapwood_area)) +
    annotate("text", x = 6, y = 160, label = "italic(RMSE)==17.969", parse = TRUE, size = 3.5) 
 
 #save the figure to WD
-ggsave("plots/RCD_SWA.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+ggsave("plots/RCD_SWA_West.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 # examining residuals (ABS)      
 model.disk.SWA.res <-  resid(model.disk_sapwoodarea)
@@ -854,7 +860,8 @@ ggsave("plots/Height_biomass_no_outlier.tiff", width = 10, height = 10, units = 
 # ------------------------------------------------------------------------------
 #isolate the subset of trees w/ leaf area data
 LA_data <- subset(pinon_data, select=c(tree_id,diameter_at_base_wet,LA_m2,
-                                       canopy_area, canopy_area_from_daim))
+                                       canopy_area, canopy_area_from_daim,
+                                       sapwood_area))
 LA_data <- LA_data[!is.na(LA_data$LA_m2), ]
 
 # total leaf area as a function of RCD
@@ -905,6 +912,121 @@ ggplot(pinon_data, aes(x=diameter_at_base_wet, y=LA_m2)) +
 
 #save to WD
 ggsave("plots/RCD-foliar_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+
+# ------------------------------------------------------------------------------
+# total leaf area as a function of sapwood area
+# Statistical model
+model.SWA.LA <- lm(LA_m2 ~ sapwood_area, data = LA_data)
+summary(model.SWA.LA)
+#Coefficients:
+#              Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  -0.91664    1.05374   -0.87 0.448369    
+# sapwood_area  0.41301    0.01661   24.87 0.000143 ***
+# Residual standard error: 1.864 on 3 degrees of freedom
+# Multiple R-squared:  0.9952,	Adjusted R-squared:  0.9936 
+# F-statistic: 618.5 on 1 and 3 DF,  p-value: 0.0001426
+
+# calculate RMSE for this model
+rmse(LA_data$LA_m2, predict(model.SWA.LA, LA_data))
+# RMSE = 1.444106
+
+#plot total leaf area as a function of total sapwood area
+ggplot(pinon_data, aes(x=sapwood_area, y=LA_m2)) +
+   geom_point() +
+   geom_smooth(method="lm", formula = y~x, color="black") +
+   theme_classic() +
+   theme(axis.text = element_text(size = 10, color = "black"),
+         axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+         axis.title = element_text(size = 10),
+         panel.grid = element_blank(),
+         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+         panel.border = element_rect(colour = "black", fill=NA, size = 0.8),
+         legend.title = element_blank(),
+         legend.text = element_text(size = 10),
+         legend.key.size = unit(1,"line"),
+         legend.position = c(0.3, 0.70),
+         legend.background=element_blank()) +
+   scale_y_continuous(limits=c(-5,65), breaks=seq(0,60,10), expand = c(0.01,0)) +
+   scale_x_continuous(limits=c(-10,160), breaks=seq(0,240,20), expand = c(0.01,0)) +
+   labs(y = expression(Foliar~area~(m^2)), 
+        x = expression(Sapwood~area~(cm^2))) +
+   stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
+                formula = "y~x", 
+                parse = TRUE) #insert R2 and equation into the plot
+
+#save to WD
+ggsave("plots/SWA-foliar_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+
+# ------------------------------------------------------------------------------
+# sapwood area as a function of canopy area 
+# (my thinking here is that drone photography could be used to estimate stand SWA)
+
+# Statistical linear model for CA1
+model.SWA.CA1 <- lm(sapwood_area ~ canopy_area, data = pinon_data)
+summary(model.SWA.CA1)
+
+#Coefficients:
+#            Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)   12.595      9.631   1.308    0.207    
+#canopy_area   11.196      1.382   8.102 2.05e-07 ***
+#Residual standard error: 30.45 on 18 degrees of freedom
+#Multiple R-squared:  0.7848,	Adjusted R-squared:  0.7728 
+#F-statistic: 65.64 on 1 and 18 DF,  p-value: 2.047e-07
+
+# calculate RMSE for this model
+rmse(pinon_data$sapwood_area, predict(model.SWA.CA1, pinon_data))
+# RMSE = 28.88625
+
+# Statistical linear model for CA2
+model.SWA.CA2 <- lm(sapwood_area ~ canopy_area_from_daim, data = pinon_data)
+summary(model.SWA.CA2)
+
+#Coefficients:
+#                      Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)             14.506      9.720   1.492    0.153    
+#canopy_area_from_daim   10.574      1.345   7.863 3.13e-07 ***
+#Residual standard error: 31.17 on 18 degrees of freedom
+#Multiple R-squared:  0.7745,	Adjusted R-squared:  0.762 
+#F-statistic: 61.82 on 1 and 18 DF,  p-value: 3.133e-07
+
+# calculate RMSE for this model
+rmse(pinon_data$sapwood_area, predict(model.SWA.CA2, pinon_data))
+# RMSE = 29.56803
+
+#plot total sapwood area as a function of canopy areas
+ggplot(CA_biomass, aes(x=CA, y=SWA, group = Group, fill = Group)) +
+   geom_point(shape = 21, size = 2) +
+   geom_smooth(aes(group = Group, linetype = Group), method = "lm", formula = "y~x", color = "black", size = 0.6, fill = "grey20") +
+   scale_fill_manual(values = c("black", "white")) +
+   theme_classic() +
+   theme(axis.text = element_text(size = 10, color = "black"),
+         axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+         axis.title = element_text(size = 10),
+         panel.grid = element_blank(),
+         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+         panel.border = element_rect(colour = "black", fill=NA, size = 0.8),
+         legend.title = element_blank(),
+         legend.text = element_text(size = 10),
+         legend.key.size = unit(1,"line"),
+         legend.position = c(0.4, 0.89),
+         legend.background=element_blank()) +
+   guides(fill=guide_legend(keywidth=0.1,keyheight=.6,default.unit="cm")) +
+   guides(linetype=FALSE) +
+   #this bit allows for adjusting the distance between legend symbols so I can allign with the R2 values
+   scale_y_continuous(limits=c(-10,250), breaks=seq(0,200,50), expand = c(0.01,0)) +
+   scale_x_continuous(limits=c(0,20), breaks=seq(0,20,5), expand = c(0.01,0)) +
+   stat_poly_eq(formula = "y~x",
+                label.x = "centre",
+                eq.with.lhs = "italic(hat(y))~`=`~",
+                aes(label = paste(stat(adj.rr.label),sep = "")), rr.digits = 3,
+                label.x.npc = "left",
+                parse = TRUE) +
+   labs(x = expression(Canopy~area~(m^2)), 
+        y = expression(Sapqood~area~(cm^2))) 
+
+#save to WD
+ggsave("plots/SWA-canopy_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+
 #------------------------------------------------------------------------------
 #Tabulate variable means and standard deviations
 
