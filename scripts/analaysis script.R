@@ -862,8 +862,14 @@ ggsave("plots/Height_biomass_no_outlier.tiff", width = 10, height = 10, units = 
 #isolate the subset of trees w/ leaf area data
 LA_data <- subset(pinon_data, select=c(tree_id,diameter_at_base_wet,LA_m2,
                                        canopy_area, canopy_area_from_daim,
-                                       sapwood_area))
+                                       sapwood_area,max_height))
 LA_data <- LA_data[!is.na(LA_data$LA_m2), ]
+
+#calculate the Huber value (HV,AL:AS) for trees with measured leaf area
+LA_data$HV <- LA_data$LA_m2 / LA_data$sapwood_area
+
+ggplot(LA_data, aes(x=max_height, y=HV)) +
+   geom_point(size=2)
 
 # total leaf area as a function of RCD
 # Statistical model
@@ -881,6 +887,15 @@ summary(model.RCD.LA) # Return model parameters
 rmse(LA_data$LA_m2, predict(model.RCD.LA, LA_data))
 # RMSE = 0.9690882 wicked good!
 
+
+#-------------------------------------------------------------------------------
+#compute where oiur function intersects with the Pangle 2015 function 
+fun1 <- function(x)0.0889*x^1.9172      #define Pangle function
+fun2 <- function(x)0.004025*x^3.215904  #define our function
+#calculate where these 2 functions intersect
+rt <- uniroot(function(x)  fun1(x) - fun2(x)  , c(.01,20), tol=1e-8) 
+rt
+#lines intersect at RCD= 10.83 cm
 
 #plot this model with the Pangel et al. 2015 model
 ggplot(pinon_data, aes(x=diameter_at_base_wet, y=LA_m2)) +
@@ -913,6 +928,33 @@ ggplot(pinon_data, aes(x=diameter_at_base_wet, y=LA_m2)) +
 
 #save to WD
 ggsave("plots/RCD-foliar_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+
+LA_estimated <- subset(pinon_data, select=c(tree_id,diameter_at_base_wet,LA_m2,
+                                             sapwood_area,max_height))
+
+LA_estimated$LA_estimated <- ifelse(is.na(LA_estimated$LA_m2), 
+                                    0.004*LA_estimated$diameter_at_base_wet^3.216,
+                                    LA_estimated$LA_m2)
+
+LA_estimated$Group <- ifelse(is.na(LA_estimated$LA_m2), 
+                                    "Calculated",
+                                    "Measured")
+
+LA_estimated$HV <- LA_estimated$sapwood_area / LA_estimated$LA_estimated
+
+ggplot(LA_estimated, aes(x=sapwood_area, y=LA_estimated,fill=Group)) +
+   geom_point(size=2,shape=21)
+
+#RCD 
+LA_estimated %>%
+   group_by(Group) %>%
+   summarise(mean_HV = mean(HV), sd_HV = sd(HV),
+             min_HV = min(HV), max_HV = max(HV))
+
+# mean_HV     sd_HV     min_HV    max_HV
+# Calculated    8.13  9.41   1.44  37.6 
+# Measured      4.04  1.84   2.35   6.77
+
 
 # ------------------------------------------------------------------------------
 # total leaf area as a function of sapwood area
