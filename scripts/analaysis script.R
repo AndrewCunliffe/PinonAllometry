@@ -1,8 +1,10 @@
-## Script for analysing  pnion allometry data
+## Script for analysing  pinon  allometry data
 ## Andrew Cunliffe <andrewmcunliffe@gmail.com> & Cameron McIntire
 ## Started 2020-10-26
 
-# Load required packages ----
+# ------ 0 Setup Environment ----------
+
+# Load required packages
 #   # Download
 if(!require(tidyverse)) {install.packages("tidyverse"); require(tidyverse)}
 if(!require(viridis)) {install.packages("viridis"); require(viridis)}
@@ -19,7 +21,6 @@ if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
 if(!require(Metrics)) {install.packages("Metrics"); require(Metrics)}
 
 
-
 # Install
 library(tidyverse) # For dplyr and ggplot2
 library(viridis) # load friendly colour palette for plotting.
@@ -32,10 +33,12 @@ library(nlstools)
 library(ggpubr) 
 
 
-# Load data
-pinon_data <- read.csv("data/pinon_data.csv", header = T)[-1,]  # Read in summary  data
 
-## Prepare data ----
+#-------------- 1. Extract Data --------------
+# Load data
+pinon_data <- read.csv("data/pinon_data.csv", header = T)[-1,]
+
+
 # Specify numeric types
 pinon_data$longitude = as.numeric(pinon_data$longitude)
 pinon_data$latitude = as.numeric(pinon_data$latitude)
@@ -82,26 +85,29 @@ pinon_data$HAG_plotmean_of_cellmax_m = as.numeric(pinon_data$HAG_plotmean_of_cel
 pinon_data$HAG_plotmedian_of_cellmax_m = as.numeric(pinon_data$HAG_plotmedian_of_cellmax_m)
 pinon_data$HAG_plot90percentile_of_cellmax_m = as.numeric(pinon_data$HAG_plot90percentile_of_cellmax_m)
 
-#-------------------------------------------------------------------------------
-#calculate LMA from scanned and weighed needle subsamples (g m-2)
+
+
+# -------------- 2. Tidying Data --------------
+
+# Calculate LMA from scanned and weighed needle subsamples (g m-2)
 pinon_data$LMA = pinon_data$scanned_wt/(pinon_data$scanned_LA/10000)
 
-#calculate the mean and standard deviation of SLA 
+# Calculate the mean and standard deviation of SLA 
 LMA_mean = mean(pinon_data$LMA, na.rm = TRUE)
 sd(pinon_data$LMA, na.rm = TRUE)
 #mean LMA = 263.0, standard deviation = 28.9
 
-#estimate the total leaf area (m2) by scaling LMA with measured total needle weight 
+# Estimate the total leaf area (m2) by scaling LMA with measured total needle weight 
 pinon_data$LA_m2 = pinon_data$tot_needle_wt/LMA_mean
 
 
 # Calculate canopy area from a and b diameters
 pinon_data$canopy_area_from_daim <- pi * (pinon_data$CanDia1)/2 * (pinon_data$CanDia2)/2
 
-# calculate the proportion of the total biomass that is < 3 cm
+# Calculate the proportion of the total biomass that is < 3 cm
 pinon_data$proportion_small_biomass <- pinon_data$dry_mass_small_partititon / pinon_data$dry_mass_total_g
 
-# calculate the proportion of the total biomass that is > 3 cm
+# Calculate the proportion of the total biomass that is > 3 cm
 pinon_data$proportion_large_biomass <- pinon_data$dry_mass_large_partititon / pinon_data$dry_mass_total_g
 
 #RCD to DBH conversion from Chojnacky $ Rogers (1999)
@@ -131,8 +137,10 @@ pinon_data$DBH_cm <- ifelse(pinon_data$max_height > 1.3,
 B0 + B1*x + B2*stm +B3*PIED + B4*x
 
 
+
+
+# -------------- 3. Analyzing Data --------------
 # Linear models
-#---- --------------------------------------------------------------------------
 
 # Model for comparing canopy area from polygons (CA1) and field obs (CA2)
 Model_CA1_CA2 <- lm(canopy_area_from_daim ~ canopy_area, data = pinon_data)
@@ -248,7 +256,7 @@ ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
                 formula = "y~x", 
                 parse = TRUE) #insert R2 and equation into the plot
 
-#save the figure to WD
+# Save the figure to WD
 ggsave("plots/maxheight_droneheight.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #-------------------------------------------------------------------------------
@@ -283,7 +291,7 @@ ggplot(pinon_data, aes(x = diameter_at_base_wet, y = max_height)) +
                 formula = "y~x", 
                 parse = TRUE) #insert R2 and equation into the plot
 
-#save the figure to WD
+# Save the figure to WD
 ggsave("plots/RCD_maxheight.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #-------------------------------------------------------------------------------
@@ -325,16 +333,16 @@ ggplot(data = pinon_data, aes( x = disk_diameter_wet, y = bark_thickness )) +
                 formula = "y~x", 
                 parse = TRUE) #insert R2 and equation into the plot
 
-#save the figure to WD
+# save the figure to WD
 ggsave("plots/barkthickness.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #-------------------------------------------------------------------------------
 
-#summarize wet disk data
+# summarize wet disk data
 pinon_data %>%
    summarise(mean_rcd = mean(diameter_at_base_wet), sd_rcd = sd(diameter_at_base_wet),
              min_rcd = min(diameter_at_base_wet), max_rcd = max(diameter_at_base_wet))
-#mean_rcd   sd_rcd min_rcd max_rcd
+# mean_rcd   sd_rcd min_rcd max_rcd
 #   11.965 7.539459     1.3    22.7
 
 pinon_data %>%
@@ -343,18 +351,18 @@ pinon_data %>%
 # mean_wet   sd_wet min_wet max_wet
 #   11.625 7.290215     1.2    22.3
 
-#summarize dry disk data
+# summarize dry disk data
 pinon_data %>%
    summarise(mean_dry = mean(disk_diameter_dry), sd_dry = sd(disk_diameter_dry),
              min_dry = min(disk_diameter_dry), max_dry = max(disk_diameter_dry))
 # mean_dry   sd_dry min_dry max_dry
 #    10.94 6.936509     1.1    20.7
 
-#percent difference between RCD and wet disk diameter 
+# percent difference between RCD and wet disk diameter 
 ((11.965 - 11.625) / 11.965) * 100
 # 2.841621%
 
-#percent difference between wet disk diameter and dry disk diameter 
+# percent difference between wet disk diameter and dry disk diameter 
 ((11.625 - 10.94) / 11.625) * 100
 # 5.892473%
 
@@ -370,7 +378,7 @@ shapiro.test(disk_difference)
 # Wilcoxon signed-rank test
 wilcox.test(pinon_data$disk_diameter_wet, pinon_data$disk_diameter_dry,
             alternative=c("two.sided", "less", "greater"))
-#Result: wet and dry disk diameters are not sig different (p=0.57)
+# Result: wet and dry disk diameters are not significantly different (p=0.57)
 
 # Model for comparing wet and dry disk diameters
 Model_disk_wetdry <- lm(disk_diameter_dry ~ disk_diameter_wet, data = pinon_data)
@@ -398,7 +406,7 @@ Disk_dry$Group <- "Dry"
 colnames(Disk_wet) <- c("RCD", "Disk_diam", "Group")
 colnames(Disk_dry) <- c("RCD", "Disk_diam", "Group")
 
-#coimbine into a single dataframe
+# combine into a single dataframe
 RCD_compare <- rbind(Disk_wet, Disk_dry)
 
 # plots the disk diameters (wet & dry) as a function of RCD
@@ -435,7 +443,7 @@ ggplot(data = RCD_compare, aes( x = RCD, y = Disk_diam, fill = Group )) +
                 label.x.npc = "left",
                 parse = TRUE)
 
-#save the figure to WD
+# save the figure to WD
 ggsave("plots/RCD_disk_compare.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #-------------------------------------------------------------------------------
@@ -454,7 +462,7 @@ rmse(pinon_data$dry_mass_total_kg, predict(Model_biomass_CA1, pinon_data))
 # Model for comparing biomass as a function of orthogonal derived canopy area (CA2)
 Model_biomass_CA2 <- lm(dry_mass_total_kg ~ canopy_area_from_daim, data = pinon_data)
 summary(Model_biomass_CA2)
-#Coefficients:
+# Coefficients:
 #                       Estimate Std. Error t value Pr(>|t|)  
 # (Intercept)            -4.6848     4.5730  -1.024    0.319    
 # canopy_area_from_daim   9.6429     0.6327  15.241 9.87e-12 ***
@@ -470,11 +478,11 @@ CA2 <- data.frame(pinon_data$canopy_area_from_daim)
 Biomass <- data.frame(pinon_data$dry_mass_total_kg)
 SWA <- data.frame(pinon_data$sapwood_area)
 
-#combine RCD variable with disk variables
+# combine RCD variable with disk variables
 CA1_biomass <- cbind(CA1, Biomass, SWA)
 CA2_biomass <- cbind(CA2, Biomass, SWA)
 
-#assign the wet and dry categorigal variables
+# assign the wet and dry categorical variables
 CA1_biomass$Group <- "CA1"
 CA2_biomass$Group <- "CA2"
 
@@ -482,10 +490,10 @@ CA2_biomass$Group <- "CA2"
 colnames(CA1_biomass) <- c("CA", "Biomass","SWA", "Group")
 colnames(CA2_biomass) <- c("CA", "Biomass","SWA", "Group")
 
-#coimbine into a single dataframe
+# combine into a single dataframe
 CA_biomass <- rbind(CA1_biomass, CA2_biomass)
 
-#plot dry biomass as a function of the two canopy area estimates
+# plot dry biomass as a function of the two canopy area estimates
 ggplot(data = CA_biomass, aes( x = CA, y = Biomass, fill = Group )) +
    geom_point(shape = 21, size = 2) +
    geom_smooth(aes(group = Group, linetype = Group), method = "lm", formula = "y~x", color = "black", size = 0.6, fill = "grey20") +
@@ -504,7 +512,7 @@ ggplot(data = CA_biomass, aes( x = CA, y = Biomass, fill = Group )) +
          legend.background=element_blank()) +
    guides(fill=guide_legend(keywidth=0.1,keyheight=.6,default.unit="cm")) +
    guides(linetype=FALSE) +
-   #this bit allows for adjusting the distance between legend symbols so I can allign with the R2 values
+   #this bit allows for adjusting the distance between legend symbols so I can align with the R2 values
    scale_y_continuous(limits=c(-20,200), breaks=seq(0,200,50), expand = c(0.01,0)) +
    scale_x_continuous(limits=c(-2,24), breaks=seq(0,20,5), expand = c(0.01,0)) +
    stat_poly_eq(formula = "y~x",
@@ -538,7 +546,7 @@ summary(model.rcd.smallportion) # Return model parameters
 rmse(pinon_data$proportion_small_biomass, predict(model.rcd.smallportion, pinon_data))
 # RMSE = 0.09766312
 
-#Figure: Propostion of dry mass <3 cm as a function of RCD
+#Figure: Proportion of dry mass <3 cm as a function of RCD
 ggplot(data = pinon_data, aes(x = diameter_at_base_wet, y = proportion_small_biomass)) +
    geom_point(na.rm = TRUE, size = 2) +
    geom_smooth(method = "lm", formula = y~x, color = "black") +
@@ -584,7 +592,7 @@ model.rcd.biomass <- nls(dry_mass_total_kg ~ a*diameter_at_base_wet^b,
                          start = list(a =1, b =1),
                          na.action=na.exclude)
 summary(model.rcd.biomass) # Return model parameters
-#Parameters:
+# Parameters:
 #   Estimate Std. Error t value Pr(>|t|)    
 # a  0.01841    0.03096   0.595    0.559    
 # b  2.85091    0.55210   5.164 6.52e-05 ***
@@ -593,13 +601,13 @@ summary(model.rcd.biomass) # Return model parameters
 rmse(pinon_data$dry_mass_total_kg, predict(model.rcd.biomass, pinon_data))
 # RMSE = 18.11884
 
-#aggregate the model residuals in a new dataframe
+# Aggregate the model residuals in a new dataframe
 RCD.biomass.residuals <- subset(pinon_data, select=c(tree_id, diameter_at_base_wet, dry_mass_total_kg))
 RCD.biomass.residuals$resid <- abs(resid(model.rcd.biomass))
 RCD.biomass.residuals$Size_class <- ifelse(pinon_data$diameter_at_base_wet >= 20,
                                            "Large trees", "Small trees")
 
-#make a basic plot of this data (not for manuscript)
+# make a basic plot of this data (not for manuscript)
 ggplot(RCD.biomass.residuals, aes(x = Size_class, y = resid, fill = Size_class)) +
    geom_boxplot() +
    geom_jitter()
@@ -780,7 +788,7 @@ summary(model.maxheight.biomass) # Return model parameters
 rmse(pinon_data$dry_mass_total_kg, predict(model.maxheight.biomass, pinon_data))
 # RMSE = 28.11426
 
-#plot dry biomass as a function of the maximum measured height
+# plot dry biomass as a function of the maximum measured height
 ggplot(data = pinon_data, aes( x = max_height, y = dry_mass_total_kg)) +
    geom_point(size = 2) +
    stat_function(fun = function(x) (coef(summary(model.maxheight.biomass))[, "Estimate"])[1]*(x)^(coef(summary(model.maxheight.biomass))[, "Estimate"])[2],
@@ -804,10 +812,10 @@ ggplot(data = pinon_data, aes( x = max_height, y = dry_mass_total_kg)) +
    labs(x = expression(Maximum~tree~height~(m)), 
         y = expression(Dry~biomass~(kg))) 
 
-#save the figure to WD
+# save the figure to WD
 ggsave("plots/Height_biomass.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
-#now plot this same model, but excluding the outlier (tree P14). Subset df.
+# now plot this same model, but excluding the outlier (tree P14). Subset df.
 Height_biomass_outlier <- subset(pinon_data, select=c(tree_id, max_height, dry_mass_total_kg))
 Height_biomass_outlier$group <- ifelse(Height_biomass_outlier$tree_id == 'P14', 'out', 'in')
 Height_biomass_no_outlier <-Height_biomass_outlier[Height_biomass_outlier$tree_id != "P14", ]   
@@ -889,7 +897,7 @@ rmse(LA_data$LA_m2, predict(model.RCD.LA, LA_data))
 
 
 #-------------------------------------------------------------------------------
-#compute where oiur function intersects with the Pangle 2015 function 
+#compute where our function intersects with the Pangle 2015 function 
 fun1 <- function(x)0.0889*x^1.9172      #define Pangle function
 fun2 <- function(x)0.004025*x^3.215904  #define our function
 #calculate where these 2 functions intersect
@@ -957,7 +965,7 @@ LA_estimated %>%
 
 
 # ------------------------------------------------------------------------------
-# total leaf area as a function of sapwood area
+# Total leaf area as a function of sapwood area
 # Statistical model
 model.SWA.LA <- lm(LA_m2 ~ sapwood_area, data = LA_data)
 summary(model.SWA.LA)
@@ -1001,7 +1009,7 @@ ggplot(pinon_data, aes(x=sapwood_area, y=LA_m2)) +
 ggsave("plots/SWA-foliar_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 # ------------------------------------------------------------------------------
-# sapwood area as a function of canopy area 
+# Sapwood area as a function of canopy area 
 # (my thinking here is that drone photography could be used to estimate stand SWA)
 
 # Statistical linear model for CA1
@@ -1122,8 +1130,7 @@ Biomass_resid$CA1_resid <- CA1_resid
 Biomass_resid$CA2_resid <- CA2_resid
 Biomass_resid$RCD_resid <- RCD_resid
 
-# I've plotted out each of these relationships and there does not appear to be
-# any meaning correlation with model deviations and LCR (or die-back). 
+# Visual assessment does not reveal any correlation with model deviations and LCR (or die-back). 
 
 
 #create bins for the die_back category in intervals of 10%
@@ -1135,7 +1142,7 @@ Biomass_resid$db_bin <- ifelse(Biomass_resid$dieback_pc >= 0 & Biomass_resid$die
 ggplot(Biomass_resid, aes(x = db_bin, y = CA1_resid)) +
    geom_boxplot()
 
-# conduct anova across the bins of dieback for CA1 residuals 
+# conduct ANOVA across the bins of dieback for CA1 residuals 
 CA1_dieback_anova <- aov(CA1_resid ~ db_bin, data = Biomass_resid)
 summary(CA1_dieback_anova) +
    
