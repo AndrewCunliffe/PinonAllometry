@@ -1,4 +1,4 @@
-## Script for analysing  pinon  allometry data
+## Script for analysing  pinon allometry data
 ## Andrew Cunliffe <andrewmcunliffe@gmail.com> & Cameron McIntire
 ## Started 2020-10-26
 
