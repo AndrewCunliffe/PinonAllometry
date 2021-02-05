@@ -31,6 +31,7 @@ library(gvlma) # Global Validation of Linear Models Assumptions
 library(polynom)
 library(nlstools)
 library(ggpubr) 
+library(DescTools)
 
 
 
@@ -134,7 +135,7 @@ pinon_data$DBH_cm <- ifelse(pinon_data$max_height > 1.3,
                             B0 + B1*pinon_data$diameter_at_base_wet + B2*stm +B3*PIED + B4*pinon_data$diameter_at_base_wet + B5*QUGA +B6*RCDq,
                             NA)
 
-B0 + B1*x + B2*stm +B3*PIED + B4*x
+#B0 + B1*x + B2*stm +B3*PIED + B4*x
 
 
 
@@ -234,6 +235,34 @@ CCC(pinon_data$max_height, pinon_data$drone_canopy_height_max, ci = "z-transform
                conf.level = 0.95)
 #        est    lwr.ci    upr.ci
 #  0.9792863 0.9489207 0.9916772
+
+#Total Least Squares Regression (extracted from base-R PCA function)
+pca <- prcomp(~max_height+drone_canopy_height_max, pinon_data)
+slp <- with(pca, rotation[2,1] / rotation[1,1]) #compute slope
+int <- with(pca, center[2] - slp*center[1]) #compute y-intercept
+slp #1.005341
+int #-0.1719115 
+
+#Make a temporary to view how the OLS and TLS match up
+ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
+  geom_point(size = 2) +
+  stat_smooth(method=lm, color="red", se=FALSE) +
+  geom_abline(slope=slp, intercept=int, color="blue") +
+  geom_abline(intercept = 0, slope = 1, color="black", 
+              linetype="dashed", size= 0.5) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 10, color = "black"),
+        axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+        axis.title = element_text(size = 10),
+        panel.grid = element_blank(),
+        plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+        panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
+  xlab("Ground measured max height (m)") +
+  ylab("UAV measured max height (m)") 
+
+#save the plot
+ggsave("plots/maxheight_droneheight_TLS.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+
 
 # Plot drone derive height as a function of measured height
 ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
