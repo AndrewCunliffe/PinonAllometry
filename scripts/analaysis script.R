@@ -1136,3 +1136,51 @@ summary(CA1_dieback_anova)
    # This is not significant (perhaps it would be w/ more sampling)
    
    
+
+### TEMP Andy's Playing ####
+
+# note that TLS is sometimes known as Deming regression.
+# https://en.wikipedia.org/wiki/Deming_regression 
+# https://cran.r-project.org/web/packages/deming/deming.pdf
+# https://cran.r-project.org/web/packages/deming/vignettes/deming.pdf
+
+## Original
+# Total Least Squares Regression (extracted from base-R PCA function)
+pca <- prcomp(~max_height+drone_canopy_height_max, pinon_data)
+slp <- with(pca, rotation[2,1] / rotation[1,1]) # compute slope
+int <- with(pca, center[2] - slp*center[1]) # compute y-intercept
+slp # 1.005341
+int # -0.1719115 
+
+# Alternative options for estimating slope and intercept parameter (using 
+# MethComp package, despite suggestions that MethComp is no longer maintained, 
+# updates were posted just a month ago and is is on CRAN).
+
+temp <- MethComp::Deming(pinon_data$max_height,
+                         pinon_data$drone_canopy_height_max,
+                         alpha = 0.05
+                         )
+
+intercept_from_deming <- temp[1]
+slope_from_deming <- temp[2]
+intercept_from_deming
+slope_from_deming
+
+# Adding confidence intervals might require bootstrapping... 
+# I haven't seen this done much... 
+# this (https://github.com/Russel88/COEF) option looked nice, but it is
+# considered bad practice in the tidyverse and is not implemented in current R...
+
+
+
+
+# If we wanted to use TLS for fitting non linear models, it looks like the ONLS package might help
+# https://stackoverflow.com/questions/29054412/nonlinear-total-least-squares-deming-regression?rq=1
+# 
+# example data
+# df <- structure(list(x = c(3, 4, 5, 6, 7, 8, 9, 10, 11), 
+#                      y = c(1.0385, 1.0195, 1.0176, 1.01, 1.009, 1.0079, 1.0068, 1.0099, 1.0038)),
+#                 .Names = c("x", "y"),
+#                 row.names = c(NA, -9L),
+#                 class = "data.frame")
+# plot(df)
