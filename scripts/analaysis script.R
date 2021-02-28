@@ -6,19 +6,19 @@
 
 # Load required packages
 #   # Download
-if(!require(tidyverse)) {install.packages("tidyverse"); require(tidyverse)}
-if(!require(viridis)) {install.packages("viridis"); require(viridis)}
-if(!require(patchwork)) {install.packages("patchwork"); require(patchwork)}
-if(!require(propagate)) {install.packages("propagate"); require(propagate)}
-if(!require(nlstools)) {install.packages("nlstools"); require(nlstools)}
-if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
-if(!require(polynom)) {install.packages("polynom"); require(polynom)}
-if(!require(gvlma)) {install.packages("gvlma"); require(gvlma)}
-if(!require(ggpubr)) {install.packages("ggpubr"); require(ggpubr)}
-if(!require(ggplot2)) {install.packages("ggplot2"); require(ggplot2)}
-if(!require(propagate)) {install.packages("propagate"); require(propagate)}
-if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
-if(!require(Metrics)) {install.packages("Metrics"); require(Metrics)}
+# if(!require(tidyverse)) {install.packages("tidyverse"); require(tidyverse)}
+# if(!require(viridis)) {install.packages("viridis"); require(viridis)}
+# if(!require(patchwork)) {install.packages("patchwork"); require(patchwork)}
+# if(!require(propagate)) {install.packages("propagate"); require(propagate)}
+# if(!require(nlstools)) {install.packages("nlstools"); require(nlstools)}
+# if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
+# if(!require(polynom)) {install.packages("polynom"); require(polynom)}
+# if(!require(gvlma)) {install.packages("gvlma"); require(gvlma)}
+# if(!require(ggpubr)) {install.packages("ggpubr"); require(ggpubr)}
+# if(!require(ggplot2)) {install.packages("ggplot2"); require(ggplot2)}
+# if(!require(propagate)) {install.packages("propagate"); require(propagate)}
+# if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
+# if(!require(Metrics)) {install.packages("Metrics"); require(Metrics)}
 
 
 # Install
@@ -39,7 +39,7 @@ library(DescTools)
 # Load data
 col_names <- names(read_csv("data/pinon_data.csv", n_max = 0))
 pinon_data <- read_csv("data/pinon_data.csv", col_names = col_names, skip = 2)
-
+rm(col_names)
 
 
 
@@ -57,7 +57,7 @@ sd(pinon_data$LMA, na.rm = TRUE)
 pinon_data$LA_m2 = pinon_data$tot_needle_wt/LMA_mean
 
 
-# Calculate canopy area from a and b diameters
+# Calculate canopy area of elipse from a and b diameters
 pinon_data$canopy_area_from_daim <- pi * (pinon_data$CanDia1)/2 * (pinon_data$CanDia2)/2
 
 # Calculate the proportion of the total biomass that is < 3 cm
@@ -134,37 +134,37 @@ ggsave("plots/CA1_CA2_regression.tiff", width = 10, height = 10, units = "cm", d
 # Model for total tree biomass as a function of the field measured BA
 Model_BAwet <- lm(dry_mass_total_kg ~ base_ba_wet, data = pinon_data)
 summary(Model_BAwet)
-#Coefficients:
+# Coefficients:
 #            Estimate Std. Error t value Pr(>|t|)    
-#(Intercept) -7.40437    6.59978  -1.122    0.277    
-#base_ba_wet  0.33130    0.03106  10.666 3.28e-09 ***
+# (Intercept) -7.40437    6.59978  -1.122    0.277    
+# base_ba_wet  0.33130    0.03106  10.666 3.28e-09 ***
 
 #-------------------------------------------------------------------------------
 # Model for total tree biomass as a function of the fresh disk measured BA
 Model_disk_BAwet <- lm(dry_mass_total_kg ~ disk_diameter_wet, data = pinon_data)
 summary(Model_disk_BAwet)
-#Coefficients:
+# Coefficients:
 #                  Estimate Std. Error t value Pr(>|t|)    
-#(Intercept)       -30.6859    11.1847  -2.744   0.0134 *  
-#disk_diameter_wet   6.4158     0.8209   7.815 3.41e-07 ***
+# (Intercept)       -30.6859    11.1847  -2.744   0.0134 *  
+# disk_diameter_wet   6.4158     0.8209   7.815 3.41e-07 ***
 
 #-------------------------------------------------------------------------------
 # Model for total tree biomass as a function of the dry disk measured BA
 Model_disk_BAdry <- lm(dry_mass_total_kg ~ disk_diameter_dry, data = pinon_data)
 summary(Model_disk_BAdry)
-#Coefficients:
+# Coefficients:
 #                  Estimate Std. Error t value Pr(>|t|)    
-#(Intercept)       -29.6225    11.2213  -2.640   0.0166 *  
-#disk_diameter_dry   6.7203     0.8725   7.702 4.19e-07 ***
+# (Intercept)       -29.6225    11.2213  -2.640   0.0166 *  
+# disk_diameter_dry   6.7203     0.8725   7.702 4.19e-07 ***
 
 #-------------------------------------------------------------------------------
 # Model for comparing field measured height to drone derived max height
-Model_height <- lm(drone_canopy_height_max ~ max_height, data = pinon_data) 
+Model_height <- lm(drone_canopy_height_max ~ max_height, data = pinon_data)
 summary(Model_height)
-#Coefficients:
+# Coefficients:
 #            Estimate Std. Error t value Pr(>|t|)    
-#(Intercept) -0.11238    0.17395  -0.646    0.526    
-#max_height   0.98708    0.04484  22.013 1.83e-14 ***
+# (Intercept) -0.11238    0.17395  -0.646    0.526    
+# max_height   0.98708    0.04484  22.013 1.83e-14 ***
 
 # calculate RMSE for this model
 rmse(pinon_data$drone_canopy_height_max, predict(Model_height, pinon_data))
@@ -185,20 +185,20 @@ wilcox.test(pinon_data$drone_canopy_height_max, pinon_data$max_height,
             alternative=c("two.sided", "less", "greater"))
 # Result: height derived from drone & field measured are not sig different (p=0.7763)
 
-#compute the Lin's  correlation concordance coefficient
+# Compute the Lin's  correlation concordance coefficient
 CCC(pinon_data$max_height, pinon_data$drone_canopy_height_max, ci = "z-transform",
                conf.level = 0.95)
 #        est    lwr.ci    upr.ci
 #  0.9792863 0.9489207 0.9916772
 
-#Total Least Squares Regression (extracted from base-R PCA function)
+# Total Least Squares Regression (extracted from base-R PCA function)
 pca <- prcomp(~max_height+drone_canopy_height_max, pinon_data)
-slp <- with(pca, rotation[2,1] / rotation[1,1]) #compute slope
-int <- with(pca, center[2] - slp*center[1]) #compute y-intercept
-slp #1.005341
-int #-0.1719115 
+slp <- with(pca, rotation[2,1] / rotation[1,1]) # compute slope
+int <- with(pca, center[2] - slp*center[1]) # compute y-intercept
+slp # 1.005341
+int # -0.1719115 
 
-#Make a temporary to view how the OLS and TLS match up
+# Visualize comparison of maximum height measurements with TLS and OLS
 ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
   geom_point(size = 2) +
   stat_smooth(method=lm, color="red", se=FALSE) +
@@ -219,38 +219,38 @@ ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
 ggsave("plots/maxheight_droneheight_TLS.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 
-# Plot drone derive height as a function of measured height
-ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
-   geom_point(size = 2) +
-   geom_smooth(method = "lm", formula = "y~x", color = "black") +
-   geom_abline(intercept = 0, slope = 1, color="black", 
-               linetype="dashed", size= 0.5) +
-   theme_classic() +
-   theme(axis.text = element_text(size = 10, color = "black"),
-         axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
-         axis.title = element_text(size = 10),
-         panel.grid = element_blank(),
-         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
-         panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
-   scale_y_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
-   scale_x_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
-   xlab("Ground measured max height (m)") +
-   ylab("UAV measured max height (m)") +
-   stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
-                formula = "y~x", 
-                parse = TRUE) #insert R2 and equation into the plot
-
-# Save the figure to WD
-ggsave("plots/maxheight_droneheight.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# # Plot drone derived height as a function of measured height, with OLS model
+# ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
+#    geom_point(size = 2) +
+#    geom_smooth(method = "lm", formula = "y~x", color = "black") +
+#    geom_abline(intercept = 0, slope = 1, color="black", 
+#                linetype="dashed", size= 0.5) +
+#    theme_classic() +
+#    theme(axis.text = element_text(size = 10, color = "black"),
+#          axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+#          axis.title = element_text(size = 10),
+#          panel.grid = element_blank(),
+#          plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+#          panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
+#    scale_y_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
+#    scale_x_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
+#    xlab("Ground measured max height (m)") +
+#    ylab("UAV measured max height (m)") +
+#    stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
+#                 formula = "y~x", 
+#                 parse = TRUE) #insert R2 and equation into the plot
+# 
+# # Save the figure to WD
+# ggsave("plots/maxheight_droneheight.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #-------------------------------------------------------------------------------
 # Model for comparing RCD to field measured height
 Model_RCD_height <- lm(max_height ~ diameter_at_base_wet, data = pinon_data) 
 summary(Model_RCD_height) 
-#Coefficients:
+# Coefficients:
 #                     Estimate Std. Error t value Pr(>|t|)    
-#(Intercept)          -0.04173    0.25048  -0.167     0.87    
-#diameter_at_base_wet  0.27595    0.01784  15.469 7.69e-12 ***
+# (Intercept)          -0.04173    0.25048  -0.167     0.87    
+# diameter_at_base_wet  0.27595    0.01784  15.469 7.69e-12 ***
 
 # calculate RMSE for this model
 rmse(pinon_data$max_height, predict(Model_RCD_height, pinon_data))
@@ -367,10 +367,10 @@ wilcox.test(pinon_data$disk_diameter_wet, pinon_data$disk_diameter_dry,
 # Model for comparing wet and dry disk diameters
 Model_disk_wetdry <- lm(disk_diameter_dry ~ disk_diameter_wet, data = pinon_data)
 summary(Model_disk_wetdry)
-#Coefficients:
+# Coefficients:
 #                   Estimate Std. Error t value Pr(>|t|)    
-#(Intercept)       -0.112872   0.116967  -0.965    0.347    
-#disk_diameter_wet  0.950785   0.008585 110.750   <2e-16 ***
+# (Intercept)       -0.112872   0.116967  -0.965    0.347    
+# disk_diameter_wet  0.950785   0.008585 110.750   <2e-16 ***
 
 # Reformatting RCD data for plotting comparison with disk diameters
 # separate the diameter variables
@@ -378,15 +378,15 @@ RCD_wet <- data.frame(pinon_data$diameter_at_base_wet)
 Disk_wet <- data.frame(pinon_data$disk_diameter_wet)
 Disk_dry <- data.frame(pinon_data$disk_diameter_dry)
 
-#combine RCD variable with disk variables
+# combine RCD variable with disk variables
 Disk_wet <- cbind(RCD_wet, Disk_wet)
 Disk_dry <- cbind(RCD_wet, Disk_dry)
 
-#assign the wet and dry categorigal variables
+# assign the wet and dry categorical variables
 Disk_wet$Group <- "Wet"
 Disk_dry$Group <- "Dry"
 
-#rename columns
+# rename columns
 colnames(Disk_wet) <- c("RCD", "Disk_diam", "Group")
 colnames(Disk_dry) <- c("RCD", "Disk_diam", "Group")
 
@@ -434,7 +434,7 @@ ggsave("plots/RCD_disk_compare.tiff", width = 10, height = 10, units = "cm", dpi
 # Model for comparing biomass as a function of polygon derived canopy area (CA1)
 Model_biomass_CA1 <- lm(dry_mass_total_kg ~ canopy_area, data = pinon_data)
 summary(Model_biomass_CA1)
-#Coefficients:
+# Coefficients:
 #             Estimate Std. Error t value Pr(>|t|)    
 # (Intercept)   -6.099      4.635  -1.316    0.205    
 # canopy_area   10.144      0.665  15.253 9.74e-12 ***
@@ -659,13 +659,13 @@ ggplot(data = pinon_data, aes(x = diameter_at_base_wet, y = dry_mass_total_kg)) 
 
 # Note that Jenkins equations requires measurements of DBH, thus we apply the 
 # RCD to DBH conversion from Chojnacky and Rogers 1999.
-# R spits out a warning message that NaNs are produced, which is b/c 6 trees 
-# are < 1.3 m tall and will give negative values. However the curve looks correct. 
+# R warns that NaNs are produced, which is b/c 6 trees are < 1.3 m tall and will
+# give negative predictions. However the curve looks correct. 
 
-#save the figure to WD
+# save the figure to WD
 ggsave("plots/RCD_biomass.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
-#Note that Jenkins eqn and this studies' eqn will converge at RCD = 35.2 cm
+# Note that Jenkins eqn and our eqn will converge at RCD = 35.2 cm.
 
 #-------------------------------------------------------------------------------
 # Sapwood area as a function of wet disk diameter
@@ -763,10 +763,10 @@ model.maxheight.biomass <- nls(dry_mass_total_kg ~ a*max_height^b,
                                start = list(a =1, b =1),
                                na.action=na.exclude,)
 summary(model.maxheight.biomass) # Return model parameters
-#Parameters:
+# Parameters:
 #  Estimate Std. Error t value Pr(>|t|)    
-#a   4.0871     3.5106   1.164  0.25953   
-#b   1.8059     0.4891   3.692  0.00167 **
+# a   4.0871     3.5106   1.164  0.25953   
+# b   1.8059     0.4891   3.692  0.00167 **
 
 # calculate RMSE for this model
 rmse(pinon_data$dry_mass_total_kg, predict(model.maxheight.biomass, pinon_data))
@@ -870,7 +870,7 @@ model.RCD.LA <- nls(LA_m2 ~ a*diameter_at_base_wet^b,
                                start = list(a =1, b =1),
                                na.action=na.exclude,)
 summary(model.RCD.LA) # Return model parameters
-#Parameters:
+# Parameters:
 #   Estimate Std. Error t value Pr(>|t|)    
 # a 0.004025   0.002398   1.678  0.19189    
 # b 3.215904   0.203406  15.810  0.00055 ***
@@ -937,7 +937,7 @@ LA_estimated$HV <- LA_estimated$sapwood_area / LA_estimated$LA_estimated
 ggplot(LA_estimated, aes(x=sapwood_area, y=LA_estimated,fill=Group)) +
    geom_point(size=2,shape=21)
 
-#RCD 
+# RCD 
 LA_estimated %>%
    group_by(Group) %>%
    summarise(mean_HV = mean(HV), sd_HV = sd(HV),
@@ -1128,7 +1128,7 @@ ggplot(Biomass_resid, aes(x = db_bin, y = CA1_resid)) +
 
 # conduct ANOVA across the bins of dieback for CA1 residuals 
 CA1_dieback_anova <- aov(CA1_resid ~ db_bin, data = Biomass_resid)
-summary(CA1_dieback_anova) +
+summary(CA1_dieback_anova)
    
    #            Df Sum Sq Mean Sq F value Pr(>F)
    # db_bin       2  327.6   163.8    1.59  0.233 ns
