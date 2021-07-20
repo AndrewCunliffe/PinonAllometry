@@ -7,3 +7,7 @@ Contact: cameron.mcintire@usda.gov & andrewmcunliffe@gmail.com
 Add explanation of structure
 
 
+
+[![DOI](https://zenodo.org/badge/307378812.svg)](https://zenodo.org/badge/latestdoi/307378812)
+
+
