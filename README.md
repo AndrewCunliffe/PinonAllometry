@@ -4,6 +4,6 @@ Code for analysis and visualisation of data for '_Allometric relationships for p
 Contact: cameron.mcintire@usda.gov & andrewmcunliffe@gmail.com
 
 
-Add explanation of structure
-
-
+This 
+The raw data are avaialble 
+pinon_data.csv
