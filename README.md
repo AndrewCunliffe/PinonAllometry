@@ -4,6 +4,18 @@ Code for analysis and visualisation of data for '_Allometric relationships for p
 Contact: cameron.mcintire@usda.gov & andrewmcunliffe@gmail.com
 
 
-This 
-The raw data are avaialble 
-pinon_data.csv
+
+
+
+A static copy of this repository is archived on Zenodo:
+
+[![DOI](https://zenodo.org/badge/307378812.svg)](https://zenodo.org/badge/latestdoi/307378812)
+
+This repository consists of three parts:
+
+1) Raw data in 'data/pinon_data.csv'
+
+2) analysis script in 'scripts/analaysis script.R'
+
+3)  All the data visualisations in 'plots'
+>>>>>>> 5c86003370682d676f95544f82bafe50556c1591
