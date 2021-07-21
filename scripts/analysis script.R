@@ -1,7 +1,3 @@
-## Script for analysing  pinon allometry data
-## Andrew Cunliffe <andrewmcunliffe@gmail.com> & Cameron McIntire
-## Started 2020-10-26
-
 # ------ 0 Setup Environment ----------
 
 
@@ -20,6 +16,7 @@
 # if(!require(propagate)) {install.packages("propagate"); require(propagate)}
 # if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
 # if(!require(Metrics)) {install.packages("Metrics"); require(Metrics)}
+# if(!require(hydroGOF)) {install.packages("hydroGOF"); require(hydroGOF)}
 
 
 # Install
@@ -34,15 +31,17 @@ library(nlstools)
 library(ggpubr) 
 library(DescTools)
 library(Metrics)
+library(hydroGOF) # The RMSE function in this package allows for na.rm parameter
 
 
 
 #-------------- 1. Extract Data --------------
 # Load data
-col_names <- names(read_csv("data/pinon_data.csv", n_max = 0))
-pinon_data <- read_csv("data/pinon_data.csv", col_names = col_names, skip = 2)
-rm(col_names)
-
+{
+   col_names <- names(read_csv("data/pinon_data.csv", n_max = 0))
+   pinon_data <- read_csv("data/pinon_data.csv", col_names = col_names, skip = 2)
+   rm(col_names)
+}
 
 
 # -------------- 2. Tidying Data --------------
@@ -53,7 +52,7 @@ pinon_data$LMA = pinon_data$scanned_wt/(pinon_data$scanned_LA/10000)
 # Calculate the mean and standard deviation of SLA 
 LMA_mean = mean(pinon_data$LMA, na.rm = TRUE)
 sd(pinon_data$LMA, na.rm = TRUE)
-#mean LMA = 263.0, standard deviation = 28.9
+# mean LMA = 263.0, standard deviation = 28.9
 
 # Estimate the total leaf area (m2) by scaling LMA with measured total needle weight 
 pinon_data$LA_m2 = pinon_data$tot_needle_wt/LMA_mean
@@ -121,7 +120,8 @@ CCC(pinon_data$canopy_area, pinon_data$canopy_area_from_daim, ci = "z-transform"
 # Plot drone derived canopy area as a function of field estimated canopy area
 ggplot(data = pinon_data, aes( x = canopy_area, y = canopy_area_from_daim )) +
    geom_point(size = 2) +
-   geom_smooth(method = "lm", formula = "y~2x+5", color = "black") +
+   # geom_smooth(method = "lm", formula = "y~2x+5", color = "black") +
+   geom_smooth(method = "lm", formula = "y~x", color = "black") +
    geom_abline(intercept = 0, slope = 1, color="black", 
                linetype="dashed", size= 0.5) +
    theme_classic() +
@@ -575,7 +575,6 @@ summary(Model_LA_CA1)
 #canopy_area   7.5848     0.3305  22.953 0.000181 ***
 
 # calculate RMSE for this model
-library(hydroGOF) #the rmse function in this package allows for na.rm parameter
 rmse(pinon_data$LA_m2, predict(Model_LA_CA1, pinon_data, na.rm=TRUE))
 # RMSE = 1.564014
 
