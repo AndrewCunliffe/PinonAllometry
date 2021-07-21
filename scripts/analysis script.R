@@ -38,8 +38,8 @@ library(hydroGOF) # The RMSE function in this package allows for na.rm parameter
 #-------------- 1. Extract Data --------------
 # Load data
 {
-   col_names <- names(read_csv("data/pinon_data.csv", n_max = 0))
-   pinon_data <- read_csv("data/pinon_data.csv", col_names = col_names, skip = 2)
+   col_names <- names(read_csv("input_data/pinon_data.csv", n_max = 0))
+   pinon_data <- read_csv("input_data/pinon_data.csv", col_names = col_names, skip = 2)
    rm(col_names)
 }
 
@@ -1358,6 +1358,6 @@ intercept_from_deming # -0.1719115
 #                 class = "data.frame")
 # plot(df)
 
-#seave the final data table as a csv file
-write.csv(pinon_data,"all_data.csv")
+# save the final data table as a csv file
+write.csv(pinon_data,"processed_pinon_data.csv")
 

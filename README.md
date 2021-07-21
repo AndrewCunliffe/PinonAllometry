@@ -10,7 +10,7 @@ A static copy of this repository is archived on Zenodo:
 
 This repository consists of three parts:
 
-1) Raw data in 'data/pinon_data.csv'
+1) Raw data in 'input_data/pinon_data.csv'
 
 2) analysis script in 'scripts/analysis script.R'
 
