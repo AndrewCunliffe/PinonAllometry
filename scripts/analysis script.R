@@ -1,9 +1,4 @@
-## Script for analysing  pinon allometry data
-## Andrew Cunliffe <andrewmcunliffe@gmail.com> & Cameron McIntire
-## Started 2020-10-26
-
 # ------ 0 Setup Environment ----------
-setwd("C:/Workspace/PinionAllometry")
 
 
 # Load required packages
@@ -21,6 +16,7 @@ setwd("C:/Workspace/PinionAllometry")
 # if(!require(propagate)) {install.packages("propagate"); require(propagate)}
 # if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
 # if(!require(Metrics)) {install.packages("Metrics"); require(Metrics)}
+# if(!require(hydroGOF)) {install.packages("hydroGOF"); require(hydroGOF)}
 
 
 # Install
@@ -35,13 +31,14 @@ library(nlstools)
 library(ggpubr) 
 library(DescTools)
 library(Metrics)
+library(hydroGOF) # The RMSE function in this package allows for na.rm parameter
 
 
 
 #-------------- 1. Extract Data --------------
 # Load data
-col_names <- names(read_csv("data/pinon_data.csv", n_max = 0))
-pinon_data <- read_csv("data/pinon_data.csv", col_names = col_names, skip = 2)
+col_names <- names(read_csv("input_data/pinon_data.csv", n_max = 0))
+pinon_data <- read_csv("input_data/pinon_data.csv", col_names = col_names, skip = 2)
 rm(col_names)
 
 
@@ -142,9 +139,6 @@ ggplot(data = pinon_data, aes( x = canopy_area, y = canopy_area_from_daim )) +
 
 #save the figure to WD
 ggsave("plots/CA1_CA2_regression.tiff", width = 10, height = 10, units = "cm", dpi = 500)
-
-#save the figure to WD
-ggsave("plots/CA1_CA2_TLS.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 
 #-------------------------------------------------------------------------------
@@ -660,7 +654,7 @@ summary(model.rcd.smallportion) # Return model parameters
 rmse(pinon_data$proportion_small_biomass, predict(model.rcd.smallportion, pinon_data))
 # RMSE = 0.09766312
 
-#Figure: Proportion of dry mass <3 cm as a function of RCD
+# Figure: Proportion of dry mass <3 cm as a function of RCD
 ggplot(data = pinon_data, aes(x = diameter_at_base_wet, y = proportion_small_biomass)) +
    geom_point(na.rm = TRUE, size = 2) +
    geom_smooth(method = "lm", formula = y~x, color = "black") +
@@ -1360,6 +1354,6 @@ intercept_from_deming # -0.1719115
 #                 class = "data.frame")
 # plot(df)
 
-#seave the final data table as a csv file
+# save the final data table as a csv file
 write.csv(pinon_data,"all_data.csv")
 
