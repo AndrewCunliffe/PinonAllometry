@@ -1,4 +1,9 @@
+## Script for analysing  pinon allometry data
+## Andrew Cunliffe <andrewmcunliffe@gmail.com> & Cameron McIntire
+## Started 2020-10-26
+
 # ------ 0 Setup Environment ----------
+setwd("C:/Workspace/PinionAllometry")
 
 
 # Load required packages
@@ -16,7 +21,6 @@
 # if(!require(propagate)) {install.packages("propagate"); require(propagate)}
 # if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
 # if(!require(Metrics)) {install.packages("Metrics"); require(Metrics)}
-# if(!require(hydroGOF)) {install.packages("hydroGOF"); require(hydroGOF)}
 
 
 # Install
@@ -31,17 +35,15 @@ library(nlstools)
 library(ggpubr) 
 library(DescTools)
 library(Metrics)
-library(hydroGOF) # The RMSE function in this package allows for na.rm parameter
 
 
 
 #-------------- 1. Extract Data --------------
 # Load data
-{
-   col_names <- names(read_csv("input_data/pinon_data.csv", n_max = 0))
-   pinon_data <- read_csv("input_data/pinon_data.csv", col_names = col_names, skip = 2)
-   rm(col_names)
-}
+col_names <- names(read_csv("data/pinon_data.csv", n_max = 0))
+pinon_data <- read_csv("data/pinon_data.csv", col_names = col_names, skip = 2)
+rm(col_names)
+
 
 
 # -------------- 2. Tidying Data --------------
@@ -52,7 +54,7 @@ pinon_data$LMA = pinon_data$scanned_wt/(pinon_data$scanned_LA/10000)
 # Calculate the mean and standard deviation of SLA 
 LMA_mean = mean(pinon_data$LMA, na.rm = TRUE)
 sd(pinon_data$LMA, na.rm = TRUE)
-# mean LMA = 263.0, standard deviation = 28.9
+#mean LMA = 263.0, standard deviation = 28.9
 
 # Estimate the total leaf area (m2) by scaling LMA with measured total needle weight 
 pinon_data$LA_m2 = pinon_data$tot_needle_wt/LMA_mean
@@ -120,8 +122,7 @@ CCC(pinon_data$canopy_area, pinon_data$canopy_area_from_daim, ci = "z-transform"
 # Plot drone derived canopy area as a function of field estimated canopy area
 ggplot(data = pinon_data, aes( x = canopy_area, y = canopy_area_from_daim )) +
    geom_point(size = 2) +
-   # geom_smooth(method = "lm", formula = "y~2x+5", color = "black") +
-   geom_smooth(method = "lm", formula = "y~x", color = "black") +
+   geom_smooth(method = "lm", formula = "y~2x+5", color = "black") +
    geom_abline(intercept = 0, slope = 1, color="black", 
                linetype="dashed", size= 0.5) +
    theme_classic() +
@@ -209,36 +210,36 @@ int # -0.1719115
 
 # Compute the Lin's  correlation concordance coefficient
 CCC(pinon_data$max_height, pinon_data$drone_canopy_height_max, ci = "z-transform",
-    conf.level = 0.95)
+               conf.level = 0.95)
 #        est    lwr.ci    upr.ci
 #  0.9792863 0.9489207 0.9916772
 
 #Plot drone derived height as a function of measured height, with OLS model
-ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
-   geom_point(size = 2) +
-   geom_smooth(method = "lm", formula = "y~x", color = "black") +
-   geom_abline(intercept = 0, slope = 1, color="black", 
-               linetype="dashed", size= 0.5) +
-   theme_classic() +
-   theme(axis.text = element_text(size = 10, color = "black"),
-         axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
-         axis.title = element_text(size = 10),
-         panel.grid = element_blank(),
-         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
-         panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
-   scale_y_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
-   scale_x_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
-   xlab("Ground measured max height (m)") +
-   ylab("UAV measured max height (m)") +
-   stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
-                formula = "y~x", 
-                parse = TRUE) #insert R2 and equation into the plot
-
+ ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
+    geom_point(size = 2) +
+    geom_smooth(method = "lm", formula = "y~x", color = "black") +
+    geom_abline(intercept = 0, slope = 1, color="black", 
+                linetype="dashed", size= 0.5) +
+    theme_classic() +
+    theme(axis.text = element_text(size = 10, color = "black"),
+          axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+          axis.title = element_text(size = 10),
+          panel.grid = element_blank(),
+          plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+          panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
+    scale_y_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
+    scale_x_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
+    xlab("Ground measured max height (m)") +
+    ylab("UAV measured max height (m)") +
+    stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
+                 formula = "y~x", 
+                 parse = TRUE) #insert R2 and equation into the plot
+ 
 #Save the figure to WD
-ggsave("plots/maxheight_droneheight.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+ ggsave("plots/maxheight_droneheight.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
-#Plot drone derived height as a function of measured height, with OLS model
-ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
+ #Plot drone derived height as a function of measured height, with OLS model
+ ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
    geom_point(size = 2) +
    stat_function(fun = function(x) 1.005341*x-0.1719115, size = 1) +
    geom_abline(intercept = 0, slope = 1, color="black", 
@@ -256,11 +257,11 @@ ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
    ylab("UAV measured max height (m)") +
    annotate("text", x = 1, y = 6.5, label = "italic(CCC)==0.979", parse = TRUE, size = 3.5) +
    geom_text(aes(1,5.9, label=(paste(expression("y = 1.01x"-"0.17")))),parse = TRUE, size = 3.5)
-
-#Save the figure to WD
-ggsave("plots/maxheight_droneheight_TLS.tiff", width = 10, height = 10, units = "cm", dpi = 500)
-
-
+ 
+ #Save the figure to WD
+ ggsave("plots/maxheight_droneheight_TLS.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+ 
+ 
 #-------------------------------------------------------------------------------
 # Model for comparing RCD to field measured height
 Model_RCD_height <- lm(max_height ~ diameter_at_base_wet, data = pinon_data) 
@@ -464,7 +465,7 @@ ggplot(data = RCD_compare, aes( x = RCD, y = Disk_diam, fill = Group )) +
       keywidth=0.1,
       keyheight=.7,
       default.unit="cm")
-   ) +
+      ) +
    scale_y_continuous(limits=c(0,24), breaks=seq(0,24,4), expand = c(0.01,0)) +
    scale_x_continuous(limits=c(0,24), breaks=seq(0,24,4), expand = c(0.01,0)) +
    xlab("RCD (cm)") +
@@ -529,7 +530,7 @@ CA_biomass$CA_LA_ratio <- CA_biomass$CA / CA_biomass$LA
 
 ggplot(data = CA_biomass, aes( x = RCD, y = CA_LA_ratio)) +
    geom_point(shape = 21, size = 2)
-
+   
 # plot dry biomass as a function of the two canopy area estimates
 ggplot(data = CA_biomass, aes( x = CA, y = Biomass, fill = Group )) +
    geom_point(shape = 21, size = 2) +
@@ -575,6 +576,7 @@ summary(Model_LA_CA1)
 #canopy_area   7.5848     0.3305  22.953 0.000181 ***
 
 # calculate RMSE for this model
+library(hydroGOF) #the rmse function in this package allows for na.rm parameter
 rmse(pinon_data$LA_m2, predict(Model_LA_CA1, pinon_data, na.rm=TRUE))
 # RMSE = 1.564014
 
@@ -647,7 +649,7 @@ ggsave("plots/LA_CA.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 # sub-sample it's best to use the smaller stuff to include n=20 data points. 
 
 model.rcd.smallportion <- lm(proportion_small_biomass ~ diameter_at_base_wet,
-                             data = pinon_data)
+                         data = pinon_data)
 summary(model.rcd.smallportion) # Return model parameters
 # Coefficients:
 #                       Estimate Std. Error t value Pr(>|t|)    
@@ -866,33 +868,33 @@ ggsave("plots/RCD_SWA_West.tiff", width = 10, height = 10, units = "cm", dpi = 5
 
 #This plot shows what a generalized equation might look like (this study + Pangle)
 ggplot(data = pinon_data, aes(x = disk_diameter_wet, y = sapwood_area)) +
-   geom_point(na.rm = TRUE, size = 2) +
-   stat_function(fun=function(x)0.8777*x^1.6948, geom="line", aes(color = "A"), size = 0.6, linetype = "solid") +
-   stat_function(fun=function(x)0.8112*x^1.7341, geom="line", aes(color = "B"), size = 0.6, linetype = "solid") +
-   stat_function(fun=function(x)0.84445*x^1.71445, geom="line", aes(color = "C"), size = 0.6, linetype = "dashed") +
-   scale_color_manual(labels = c("This study","Pangle et al. 2015","Generalized"), 
-                      values = c("red", "blue","black")) +
-   theme_classic() +
-   theme(axis.text = element_text(size = 10, color = "black"),
-         axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
-         axis.title = element_text(size = 10),
-         panel.grid = element_blank(),
-         plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
-         panel.border = element_rect(colour = "black", fill=NA, size = 0.8),
-         legend.title = element_blank(),
-         legend.text = element_text(size = 10),
-         legend.key.size = unit(1,"line"),
-         legend.position = c(0.3, 0.65),
-         legend.background=element_blank()) +
-   scale_y_continuous(limits=c(0,200), breaks=seq(0,200,50), expand = c(0.01,0)) +
-   scale_x_continuous(limits=c(0,24), breaks=seq(0,24,4), expand = c(0.01,0)) +
-   labs(y = expression(Sapwood~area~(cm^2)), 
-        x = expression(Disk~diameter~(cm))) +
-   guides(size = FALSE, linetype = FALSE)
-
+  geom_point(na.rm = TRUE, size = 2) +
+  stat_function(fun=function(x)0.8777*x^1.6948, geom="line", aes(color = "A"), size = 0.6, linetype = "solid") +
+  stat_function(fun=function(x)0.8112*x^1.7341, geom="line", aes(color = "B"), size = 0.6, linetype = "solid") +
+  stat_function(fun=function(x)0.84445*x^1.71445, geom="line", aes(color = "C"), size = 0.6, linetype = "dashed") +
+  scale_color_manual(labels = c("This study","Pangle et al. 2015","Generalized"), 
+                     values = c("red", "blue","black")) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 10, color = "black"),
+        axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
+        axis.title = element_text(size = 10),
+        panel.grid = element_blank(),
+        plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
+        panel.border = element_rect(colour = "black", fill=NA, size = 0.8),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10),
+        legend.key.size = unit(1,"line"),
+        legend.position = c(0.3, 0.65),
+        legend.background=element_blank()) +
+  scale_y_continuous(limits=c(0,200), breaks=seq(0,200,50), expand = c(0.01,0)) +
+  scale_x_continuous(limits=c(0,24), breaks=seq(0,24,4), expand = c(0.01,0)) +
+  labs(y = expression(Sapwood~area~(cm^2)), 
+       x = expression(Disk~diameter~(cm))) +
+  guides(size = FALSE, linetype = FALSE)
+  
 # examining residuals (ABS)      
 model.disk.SWA.res <-  resid(model.disk_sapwoodarea)
-
+ 
 # Add residuals to dataframe, and compute normalised residuals (for plotting).
 pinon_data$swa_residuals  <- model.disk.SWA.res
 pinon_data$normalised_swa_residuals <- (pinon_data$swa_residuals/pinon_data$sapwood_area)
@@ -969,9 +971,9 @@ Height_biomass_no_outlier <-Height_biomass_outlier[Height_biomass_outlier$tree_i
 
 #model biomass as a function of height excluding the P14 outlier
 model.maxheight.biomass.no.outlier <- nls(dry_mass_total_kg ~ a*max_height^b,
-                                          data = Height_biomass_no_outlier,
-                                          start = list(a =1, b =1),
-                                          na.action=na.exclude)
+                               data = Height_biomass_no_outlier,
+                               start = list(a =1, b =1),
+                               na.action=na.exclude)
 
 summary(model.maxheight.biomass.no.outlier) # Return model parameters
 #  Estimate Std. Error t value Pr(>|t|)    
@@ -1029,9 +1031,9 @@ ggplot(LA_data, aes(x=max_height, y=HV)) +
 # total leaf area as a function of RCD
 # Statistical model
 model.RCD.LA <- nls(LA_m2 ~ a*diameter_at_base_wet^b,
-                    data = LA_data,
-                    start = list(a =1, b =1),
-                    na.action=na.exclude,)
+                               data = LA_data,
+                               start = list(a =1, b =1),
+                               na.action=na.exclude,)
 summary(model.RCD.LA) # Return model parameters
 # Parameters:
 #   Estimate Std. Error t value Pr(>|t|)    
@@ -1085,15 +1087,15 @@ ggplot(pinon_data, aes(x=diameter_at_base_wet, y=LA_m2)) +
 ggsave("plots/RCD-foliar_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 LA_estimated <- subset(pinon_data, select=c(tree_id,diameter_at_base_wet,LA_m2,
-                                            sapwood_area,max_height))
+                                             sapwood_area,max_height))
 
 LA_estimated$LA_estimated <- ifelse(is.na(LA_estimated$LA_m2), 
                                     0.004*LA_estimated$diameter_at_base_wet^3.216,
                                     LA_estimated$LA_m2)
 
 LA_estimated$Group <- ifelse(is.na(LA_estimated$LA_m2), 
-                             "Calculated",
-                             "Measured")
+                                    "Calculated",
+                                    "Measured")
 
 LA_estimated$HV <- LA_estimated$sapwood_area / LA_estimated$LA_estimated
 
@@ -1220,7 +1222,7 @@ ggplot(CA_biomass, aes(x=CA, y=SWA, group = Group, fill = Group)) +
                 label.x.npc = "left",
                 parse = TRUE) +
    labs(x = expression(Canopy~area~(m^2)), 
-        y = expression(Sapqood~area~(cm^2))) 
+        y = expression(Sapwood~area~(cm^2))) 
 
 #save to WD
 ggsave("plots/SWA-canopy_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
@@ -1292,11 +1294,11 @@ ggplot(Biomass_resid, aes(x = db_bin, y = CA1_resid)) +
 # conduct ANOVA across the bins of dieback for CA1 residuals 
 CA1_dieback_anova <- aov(CA1_resid ~ db_bin, data = Biomass_resid)
 summary(CA1_dieback_anova)
-
-#            Df Sum Sq Mean Sq F value Pr(>F)
-# db_bin       2  327.6   163.8    1.59  0.233 ns
-# Residuals   17 1751.4   103.0  
-# This is not significant (perhaps it would be w/ more sampling)
+   
+   #            Df Sum Sq Mean Sq F value Pr(>F)
+   # db_bin       2  327.6   163.8    1.59  0.233 ns
+   # Residuals   17 1751.4   103.0  
+   # This is not significant (perhaps it would be w/ more sampling)
 
 # Boxplot of RCD~biomass residuals to to canopy dieback
 ggplot(Biomass_resid, aes(x = db_bin, y = RCD_resid)) +
@@ -1305,8 +1307,8 @@ ggplot(Biomass_resid, aes(x = db_bin, y = RCD_resid)) +
 # conduct ANOVA across the bins of dieback for RCD~biomass residuals 
 RCD_dieback_anova <- aov(RCD_resid ~ db_bin, data = Biomass_resid)
 summary(RCD_dieback_anova)
-
-
+   
+   
 
 ### TEMP Andy's Playing ####
 
@@ -1330,7 +1332,7 @@ library(MethComp)
 temp <- MethComp::Deming(pinon_data$max_height,
                          pinon_data$drone_canopy_height_max,
                          alpha = 0.05
-)
+                         )
 
 slope_from_deming <- temp[2]
 intercept_from_deming <- temp[1]
@@ -1358,6 +1360,6 @@ intercept_from_deming # -0.1719115
 #                 class = "data.frame")
 # plot(df)
 
-# save the final data table as a csv file
-write.csv(pinon_data,"processed_pinon_data.csv")
+#seave the final data table as a csv file
+write.csv(pinon_data,"all_data.csv")
 
