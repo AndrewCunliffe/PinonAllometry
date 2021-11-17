@@ -2,23 +2,6 @@
 
 
 # Load required packages
-#   # Download
-# if(!require(tidyverse)) {install.packages("tidyverse"); require(tidyverse)}
-# if(!require(viridis)) {install.packages("viridis"); require(viridis)}
-# if(!require(patchwork)) {install.packages("patchwork"); require(patchwork)}
-# if(!require(propagate)) {install.packages("propagate"); require(propagate)}
-# if(!require(nlstools)) {install.packages("nlstools"); require(nlstools)}
-# if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
-# if(!require(polynom)) {install.packages("polynom"); require(polynom)}
-# if(!require(gvlma)) {install.packages("gvlma"); require(gvlma)}
-# if(!require(ggpubr)) {install.packages("ggpubr"); require(ggpubr)}
-# if(!require(ggplot2)) {install.packages("ggplot2"); require(ggplot2)}
-# if(!require(propagate)) {install.packages("propagate"); require(propagate)}
-# if(!require(ggpmisc)) {install.packages("ggpmisc"); require(ggpmisc)}
-# if(!require(Metrics)) {install.packages("Metrics"); require(Metrics)}
-# if(!require(hydroGOF)) {install.packages("hydroGOF"); require(hydroGOF)}
-
-
 # Install
 library(tidyverse) # For dplyr and ggplot2
 library(viridis) # load friendly colour palette for plotting.
@@ -105,10 +88,10 @@ summary(Model_CA1_CA2)
 
 # Total Least Squares Regression (extracted from base-R PCA function)
 pca <- prcomp(~canopy_area+canopy_area_from_daim, pinon_data)
-slp <- with(pca, rotation[2,1] / rotation[1,1]) # compute slope
-int <- with(pca, center[2] - slp*center[1]) # compute y-intercept
-slp # 1.052002
-int # -0.1470195 
+tls_slp <- with(pca, rotation[2,1] / rotation[1,1]) # compute slope
+tls_int <- with(pca, center[2] - slp*center[1]) # compute y-intercept
+
+equation <- paste("y = ", round(tls_int, 3), "+", round(tls_slp, 3), "x")
 
 # Compute the Lin's  correlation concordance coefficient
 CCC(pinon_data$canopy_area, pinon_data$canopy_area_from_daim, ci = "z-transform",
@@ -117,9 +100,9 @@ CCC(pinon_data$canopy_area, pinon_data$canopy_area_from_daim, ci = "z-transform"
 #  0.9961561 0.9918511 0.9981888
 
 # Plot drone derived canopy area as a function of field estimated canopy area
-ggplot(data = pinon_data, aes( x = canopy_area, y = canopy_area_from_daim )) +
+fig1B <- ggplot(data = pinon_data, aes( x = canopy_area, y = canopy_area_from_daim )) +
    geom_point(size = 2) +
-   geom_smooth(method = "lm", formula = "y~2x+5", color = "black") +
+   stat_function(fun = function(x) tls_slp*x + tls_int, size = 1) +
    geom_abline(intercept = 0, slope = 1, color="black", 
                linetype="dashed", size= 0.5) +
    theme_classic() +
@@ -133,12 +116,9 @@ ggplot(data = pinon_data, aes( x = canopy_area, y = canopy_area_from_daim )) +
    scale_x_continuous(limits=c(-0.5,21), breaks=seq(0,22,5), expand = c(0,0)) +
    labs(x = expression(CA["1"]~(m^2)),
         y = expression(CA["2"]~(m^2))) +
-   stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
-                formula = "y~x", rr.digits = 3,
-                parse = TRUE) #insert R2 and equation into the plot
+   annotate("text", x=7, y=20, label=equation) +
+   annotate("text", x=4.5, y=18, label = "italic(CCC)==0.996", parse = TRUE)
 
-#save the figure to WD
-ggsave("plots/CA1_CA2_regression.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 
 #-------------------------------------------------------------------------------
@@ -197,45 +177,20 @@ wilcox.test(pinon_data$drone_canopy_height_max, pinon_data$max_height,
 
 # Total Least Squares Regression (extracted from base-R PCA function)
 pca <- prcomp(~max_height+drone_canopy_height_max, pinon_data)
-slp <- with(pca, rotation[2,1] / rotation[1,1]) # compute slope
-int <- with(pca, center[2] - slp*center[1]) # compute y-intercept
-slp # 1.005341
-int # -0.1719115 
+tls_slp <- with(pca, rotation[2,1] / rotation[1,1]) # compute slope
+tls_int <- with(pca, center[2] - slp*center[1]) # compute y-intercept
+equation <- paste("y = ", round(tls_int, 3), "+", round(tls_slp, 3), "x")
 
 # Compute the Lin's  correlation concordance coefficient
-CCC(pinon_data$max_height, pinon_data$drone_canopy_height_max, ci = "z-transform",
+ccc_result <- CCC(pinon_data$max_height, pinon_data$drone_canopy_height_max, ci = "z-transform",
                conf.level = 0.95)
-#        est    lwr.ci    upr.ci
-#  0.9792863 0.9489207 0.9916772
+ccc <- paste("CCC = ", round(ccc_result$rho.c[1], 3))
 
-#Plot drone derived height as a function of measured height, with OLS model
- ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
-    geom_point(size = 2) +
-    geom_smooth(method = "lm", formula = "y~x", color = "black") +
-    geom_abline(intercept = 0, slope = 1, color="black", 
-                linetype="dashed", size= 0.5) +
-    theme_classic() +
-    theme(axis.text = element_text(size = 10, color = "black"),
-          axis.text.x = element_text(angle = 0, vjust = 1, hjust = 0.5),
-          axis.title = element_text(size = 10),
-          panel.grid = element_blank(),
-          plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), units = , "cm"),
-          panel.border = element_rect(colour = "black", fill=NA, size = 0.8)) +
-    scale_y_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
-    scale_x_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
-    xlab("Ground measured max height (m)") +
-    ylab("UAV measured max height (m)") +
-    stat_poly_eq(aes(label = paste("atop(", stat(adj.rr.label), ",", stat(eq.label), ")", sep = "")), 
-                 formula = "y~x", 
-                 parse = TRUE) #insert R2 and equation into the plot
- 
-#Save the figure to WD
- ggsave("plots/maxheight_droneheight.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
- #Plot drone derived height as a function of measured height, with OLS model
- ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
+ #Plot drone derived height as a function of measured height, with TLS model
+ fig1A <- ggplot(data = pinon_data, aes( x = max_height, y = drone_canopy_height_max )) +
    geom_point(size = 2) +
-   stat_function(fun = function(x) 1.005341*x-0.1719115, size = 1) +
+   stat_function(fun = function(x) tls_slp*x + tls_int, size = 1) +
    geom_abline(intercept = 0, slope = 1, color="black", 
                linetype="dashed", size= 0.5) +
    theme_classic() +
@@ -249,12 +204,35 @@ CCC(pinon_data$max_height, pinon_data$drone_canopy_height_max, ci = "z-transform
    scale_x_continuous(limits=c(-0.5,7), breaks=seq(0,6,2), expand = c(0,0)) +
    xlab("Ground measured max height (m)") +
    ylab("UAV measured max height (m)") +
-   annotate("text", x = 1, y = 6.5, label = "italic(CCC)==0.979", parse = TRUE, size = 3.5) +
-   geom_text(aes(1,5.9, label=(paste(expression("y = 1.01x"-"0.17")))),parse = TRUE, size = 3.5)
+   annotate("text", x=1.9, y=6.5, label=equation) +
+   annotate("text", x=1.1, y=5.8, label=ccc)
  
- #Save the figure to WD
- ggsave("plots/maxheight_droneheight_TLS.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+
+ ### combine plot objects with Patchwork
+ pall <- (fig1A + fig1B) +
+    plot_annotation(tag_levels = 'a') & theme(plot.tag.position = c(0.0, 0.97))
  
+ filename = "plots/Figure_1"
+ 
+ ggsave(
+    pall,
+    filename = paste0(filename, ".png"),
+    width = 16,
+    height = 8,
+    units = "cm"
+ )
+ 
+ ggsave(
+    pall,
+    filename = paste0(filename, ".pdf"),
+    width = 16,
+    height = 8,
+    units = "cm"
+ )
+ 
+ 
+ 
+  
  
 #-------------------------------------------------------------------------------
 # Model for comparing RCD to field measured height
@@ -289,7 +267,7 @@ ggplot(pinon_data, aes(x = diameter_at_base_wet, y = max_height)) +
                 parse = TRUE) #insert R2 and equation into the plot
 
 # Save the figure to WD
-ggsave("plots/RCD_maxheight.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/RCD_maxheight.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #-------------------------------------------------------------------------------
 # Model for comparing bark-thickness to RCD
@@ -331,7 +309,7 @@ ggplot(data = pinon_data, aes( x = disk_diameter_wet, y = bark_thickness )) +
                 parse = TRUE) #insert R2 and equation into the plot
 
 # save the figure to WD
-ggsave("plots/barkthickness.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/barkthickness.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #-------------------------------------------------------------------------------
 
@@ -468,7 +446,7 @@ ggplot(data = RCD_compare, aes( x = RCD, y = Disk_diam, fill = Group )) +
    annotate("text", x = 4, y = 20, label = "italic(CCC)==0.985", parse = TRUE, size = 3.5)
 
 # save the figure to WD
-ggsave("plots/RCD_disk_compare_TLS.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/RCD_disk_compare_TLS.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #-------------------------------------------------------------------------------
 # Model for comparing biomass as a function of polygon derived canopy area (CA1)
@@ -557,7 +535,7 @@ ggplot(data = CA_biomass, aes( x = CA, y = Biomass, fill = Group )) +
         y = expression(Dry~biomass~(kg))) 
 
 #save the figure to WD
-ggsave("plots/CA_biomass.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/CA_biomass.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #-------------------------------------------------------------------------------
 # Models for comparing leaf area as a function of polygon derived canopy areas
@@ -633,7 +611,7 @@ ggplot(data = CA_biomass, aes( x = CA, y = LA, fill = Group )) +
         y = expression(Leaf~area~(m^2))) 
 
 #save the figure to WD
-ggsave("plots/LA_CA.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/LA_CA.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #-------------------------------------------------------------------------------
 # Relationship of RCD to biomass proportions
@@ -687,7 +665,7 @@ ggplot(data = pinon_data, aes(x = diameter_at_base_wet, y = proportion_small_bio
    annotate("text", x = 15, y = 0.9, label = "italic(RMSE)==0.098", parse = TRUE, size = 3.5) 
 
 #save the figure to WD
-ggsave("plots/RCD_biomass_proportion.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/RCD_biomass_proportion.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 
 # Nonlinear models
@@ -796,9 +774,9 @@ ggplot(data = pinon_data, aes(x = diameter_at_base_wet, y = dry_mass_total_kg)) 
 # then multiplying the result by 0.45359237 (conversion for lb to kg)
 
 # save the figure to WD
-ggsave("plots/RCD_biomass.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/RCD_biomass.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
-# Note that Jenkins eqn and our eqn will converge at RCD = 35.2 cm.
+# Note that Jenkins eqn and our eqn converge at RCD = 35.2 cm.
 
 #-------------------------------------------------------------------------------
 # Sapwood area as a function of wet disk diameter
@@ -858,7 +836,7 @@ ggplot(data = pinon_data, aes(x = disk_diameter_wet, y = sapwood_area)) +
    annotate("text", x = 6, y = 160, label = "italic(RMSE)==17.969", parse = TRUE, size = 3.5) 
 
 #save the figure to WD
-ggsave("plots/RCD_SWA_West.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/RCD_SWA_West.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #This plot shows what a generalized equation might look like (this study + Pangle)
 ggplot(data = pinon_data, aes(x = disk_diameter_wet, y = sapwood_area)) +
@@ -910,7 +888,7 @@ ggplot(data = pinon_data, aes(x=disk_diameter_wet, y=normalised_swa_residuals)) 
    ylab("SWA normalized residuals")
 
 #save the figure to WD
-ggsave("plots/SWA residuals.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/SWA residuals.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 # ------------------------------------------------------------------------------
 # max_height as predictor of total tree biomass
@@ -956,7 +934,7 @@ ggplot(data = pinon_data, aes( x = max_height, y = dry_mass_total_kg)) +
         y = expression(Dry~biomass~(kg))) 
 
 # save the figure to WD
-ggsave("plots/Height_biomass.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/Height_biomass.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 # now plot this same model, but excluding the outlier (tree P14). Subset df.
 Height_biomass_outlier <- subset(pinon_data, select=c(tree_id, max_height, dry_mass_total_kg))
@@ -1007,7 +985,7 @@ ggplot(data = Height_biomass_outlier, aes( x = max_height, y = dry_mass_total_kg
         y = expression(Dry~biomass~(kg))) 
 
 #save the figure to WD
-ggsave("plots/Height_biomass_no_outlier.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/Height_biomass_no_outlier.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 # ------------------------------------------------------------------------------
 #isolate the subset of trees w/ leaf area data
@@ -1078,7 +1056,7 @@ ggplot(pinon_data, aes(x=diameter_at_base_wet, y=LA_m2)) +
    annotate("text", x = 6, y = 52, label = "italic(RMSE)==0.969", parse = TRUE, size = 3.5)
 
 #save to WD
-ggsave("plots/RCD-foliar_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/RCD-foliar_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 LA_estimated <- subset(pinon_data, select=c(tree_id,diameter_at_base_wet,LA_m2,
                                              sapwood_area,max_height))
@@ -1149,7 +1127,7 @@ ggplot(pinon_data, aes(x=sapwood_area, y=LA_m2)) +
                 parse = TRUE) #insert R2 and equation into the plot
 
 #save to WD
-ggsave("plots/SWA-foliar_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/SWA-foliar_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 # ------------------------------------------------------------------------------
 # Sapwood area as a function of canopy area 
@@ -1219,7 +1197,7 @@ ggplot(CA_biomass, aes(x=CA, y=SWA, group = Group, fill = Group)) +
         y = expression(Sapwood~area~(cm^2))) 
 
 #save to WD
-ggsave("plots/SWA-canopy_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
+# ggsave("plots/SWA-canopy_area.tiff", width = 10, height = 10, units = "cm", dpi = 500)
 
 #------------------------------------------------------------------------------
 #Tabulate variable means and standard deviations
@@ -1281,7 +1259,7 @@ Biomass_resid$db_bin <- ifelse(Biomass_resid$dieback_pc >= 0 & Biomass_resid$die
                                ifelse(Biomass_resid$dieback_pc >= 10 & Biomass_resid$dieback_pc < 20, '10-20%', 
                                       ifelse(Biomass_resid$dieback_pc >= 20, '20-30%', "NA")))
 
-# Boxplot of CA1~Biomass residuals to to canopy dieback
+# Box plot of CA1~Biomass residuals to to canopy dieback
 ggplot(Biomass_resid, aes(x = db_bin, y = CA1_resid)) +
    geom_boxplot()
 
@@ -1304,55 +1282,7 @@ summary(RCD_dieback_anova)
    
    
 
-### TEMP Andy's Playing ####
 
-# note that TLS is sometimes known as Deming regression.
-# https://en.wikipedia.org/wiki/Deming_regression 
-# https://cran.r-project.org/web/packages/deming/deming.pdf
-# https://cran.r-project.org/web/packages/deming/vignettes/deming.pdf
-
-## Original
-# Total Least Squares Regression (extracted from base-R PCA function)
-pca <- prcomp(~max_height+drone_canopy_height_max, pinon_data)
-slp <- with(pca, rotation[2,1] / rotation[1,1]) # compute slope
-int <- with(pca, center[2] - slp*center[1]) # compute y-intercept
-slp # 1.005341
-int # -0.1719115 
-
-# Alternative options for estimating slope and intercept parameter (using 
-# MethComp package, despite suggestions that MethComp is no longer maintained, 
-# updates were posted just a month ago and is is on CRAN).
-library(MethComp)
-temp <- MethComp::Deming(pinon_data$max_height,
-                         pinon_data$drone_canopy_height_max,
-                         alpha = 0.05
-                         )
-
-slope_from_deming <- temp[2]
-intercept_from_deming <- temp[1]
-slope_from_deming # 1.005341 
-intercept_from_deming # -0.1719115
-#this yields the same results as the base-R method, nice. 
-
-
-# Adding confidence intervals might require bootstrapping... 
-# I haven't seen this done much... 
-# this (https://github.com/Russel88/COEF) option looked nice, but it is
-# considered bad practice in the tidyverse and is not implemented in current R...
-
-
-
-
-# If we wanted to use TLS for fitting non linear models, it looks like the ONLS package might help
-# https://stackoverflow.com/questions/29054412/nonlinear-total-least-squares-deming-regression?rq=1
-# 
-# example data
-# df <- structure(list(x = c(3, 4, 5, 6, 7, 8, 9, 10, 11), 
-#                      y = c(1.0385, 1.0195, 1.0176, 1.01, 1.009, 1.0079, 1.0068, 1.0099, 1.0038)),
-#                 .Names = c("x", "y"),
-#                 row.names = c(NA, -9L),
-#                 class = "data.frame")
-# plot(df)
 
 # save the final data table as a csv file
 write.csv(pinon_data,"all_data.csv")
