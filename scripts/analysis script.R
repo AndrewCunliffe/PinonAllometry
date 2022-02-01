@@ -368,8 +368,8 @@ fig2B <- ggplot(data = Height_biomass_outlier, aes( x = max_height, y = dry_mass
    theme(legend.position = "none") +
    scale_y_continuous(limits=c(0,200), breaks=seq(0,200,50), expand = c(0.01,0)) +
    scale_x_continuous(limits=c(0,8), breaks=seq(0,8,2), expand = c(0.01,0)) +
-   annotate("text", x = 2, y = 180, label = "italic(y)==0.971~italic(x)^2.563", parse = TRUE, size = 3.5, family = "ariel") +
-   annotate("text", x = 2, y = 160, label = "italic(RMSE)==9.46", parse = TRUE, size = 3.5, family = "ariel") +
+   annotate("text", x = 2, y = 180, label = "italic(y)==0.971~italic(x)^2.563", parse = TRUE, size = 3.5) +
+   annotate("text", x = 2, y = 160, label = "italic(RMSE)==9.46", parse = TRUE, size = 3.5) +
    labs(x = expression(Maximum~tree~height~(m)), 
         y = expression(Dry~biomass~(kg))) 
 
@@ -474,6 +474,7 @@ ggsave(
    height = 9,
    units = "cm"
 )
+
 
 # -------------- Figure 3 --------------
 
