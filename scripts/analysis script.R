@@ -218,6 +218,13 @@ ggsave(
    units = "cm"
 )
 
+ggsave(
+   pall,
+   filename = paste0(filename, ".pdf"),
+   width = 16,
+   height = 8,
+   units = "cm"
+)
 
 
 
@@ -460,7 +467,13 @@ ggsave(
    units = "cm"
 )
 
-
+ggsave(
+   pall,
+   filename = paste0(filename, ".pdf"),
+   width = 30,
+   height = 9,
+   units = "cm"
+)
 
 # -------------- Figure 3 --------------
 
@@ -586,6 +599,13 @@ ggsave(
    units = "cm"
 )
 
+ggsave(
+   pall,
+   filename = paste0(filename, ".pdf"),
+   width = 21,
+   height = 9,
+   units = "cm"
+)
 
 
 
@@ -756,6 +776,13 @@ ggsave(
    units = "cm"
 )
 
+ggsave(
+   pall,
+   filename = paste0(filename, ".pdf"),
+   width = 30,
+   height = 9,
+   units = "cm"
+)
 
 
 
